@@ -34,3 +34,21 @@ _version.py.bak
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Customer data — never commit
+examples/
+output/
+output_kandla/
+
+# Vendored tooling (optional — uncomment if you ran the git rm above)
+Inno Setup 6/
+
+# Customer-confidential file patterns (defense in depth)
+*Pipeline_Listing*.xlsx
+*Pipe_Tally*.xlsx
+FFP_Report_*.xls?
+FFP_HMEL_*.xlsx
+FFP_*_annexure.xlsx
+*final_report.pdf
+1ZS*.xlsx
+1YC*.xlsx
