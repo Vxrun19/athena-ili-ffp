@@ -1,0 +1,41 @@
+{
+  "vendor_name": "Generic template — fill in the blanks",
+  "sheet_name": null,
+  "header_row": 0,
+  "column_mappings": {
+    "anomaly_id":             "",
+    "abs_distance_m":         "",
+    "upstream_weld_dist_m":   "",
+    "joint_number":           "",
+    "joint_length_m":         "",
+    "wt_mm":                  "",
+    "depth_pct_wt":           "",
+    "length_mm":              "",
+    "width_mm":               "",
+    "clock_position":         "",
+    "surface":                "",
+    "feature_identification": "",
+    "dimension_class":        "",
+    "description":            "",
+    "latitude":               "",
+    "longitude":              ""
+  },
+  "unit_conventions": {
+    "chainage":           "m",
+    "upstream_weld_dist": "m",
+    "depth":              "%",
+    "clock":              "hh:mm",
+    "length":             "mm",
+    "width":              "mm",
+    "wall_thickness":     "mm"
+  },
+  "value_normalizations": {
+    "surface": {
+      "I":   "internal",
+      "E":   "external",
+      "Int": "internal",
+      "Ext": "external"
+    }
+  },
+  "notes": "Empty template. Fill in every column_mappings value with the actual header name from your vendor file, adjust unit_conventions for what the source uses, and extend value_normalizations for any categorical fields (surface, feature_identification) the vendor uses non-standard markers for. Required canonical fields: abs_distance_m, joint_number, wt_mm, length_mm, width_mm, surface, and one of depth_pct_wt or depth_mm. Remove any column_mappings entry whose value is blank — empty strings won't auto-match anything in the source file."
+}

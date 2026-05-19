@@ -1,0 +1,42 @@
+{
+  "vendor_name": "Rosen 2018 (standard pipe-tally)",
+  "sheet_name": "Defects",
+  "header_row": 0,
+  "column_mappings": {
+    "anomaly_id":             "Anomaly Identification",
+    "abs_distance_m":         "Distance to Reference Point",
+    "upstream_weld_dist_m":   "Distance to Upstream Weld",
+    "joint_number":           "Joint Number",
+    "joint_length_m":         "Joint Length",
+    "wt_mm":                  "Wall thickness",
+    "depth_pct_wt":           "Depth",
+    "length_mm":              "Length, axial",
+    "width_mm":               "Width, circ",
+    "clock_position":         "Clock Position",
+    "surface":                "Surface",
+    "feature_identification": "Feature Ident",
+    "dimension_class":        "Feature Class",
+    "description":            "Description",
+    "latitude":               "Latitude",
+    "longitude":              "Longitude"
+  },
+  "unit_conventions": {
+    "chainage":           "m",
+    "upstream_weld_dist": "m",
+    "depth":              "%",
+    "clock":              "hh:mm",
+    "length":             "mm",
+    "width":              "mm",
+    "wall_thickness":     "mm"
+  },
+  "value_normalizations": {
+    "surface": {
+      "I":   "internal",
+      "E":   "external",
+      "Int": "internal",
+      "Ext": "external",
+      "M":   "midwall"
+    }
+  },
+  "notes": "Based on Rosen's publicly-known pipe-tally column conventions, c. 2015-2018. Surface markers vary across regions (I/E vs Int/Ext); the value_normalizations block handles both. Feature Ident is expected to carry POF acronyms (CORR / COCL / DENT / …) — if your file has free-text descriptions instead, extend value_normalizations.feature_identification or remap to 'description'."
+}

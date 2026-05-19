@@ -1,0 +1,37 @@
+{
+  "vendor_name": "Onstream Pipeline Inspection (DRAFT)",
+  "sheet_name": "Anomaly List",
+  "header_row": 0,
+  "column_mappings": {
+    "anomaly_id":             "Feature ID",
+    "abs_distance_m":         "Distance from Launcher",
+    "upstream_weld_dist_m":   "Distance to Upstream Girth Weld",
+    "joint_number":           "Joint",
+    "wt_mm":                  "Wall Thickness",
+    "depth_pct_wt":           "Depth",
+    "length_mm":              "Length",
+    "width_mm":               "Width",
+    "clock_position":         "Clock Position",
+    "surface":                "Surface",
+    "feature_identification": "Feature Type",
+    "description":            "Description"
+  },
+  "unit_conventions": {
+    "chainage":           "m",
+    "upstream_weld_dist": "m",
+    "depth":              "%",
+    "clock":              "degrees",
+    "length":             "mm",
+    "width":              "mm",
+    "wall_thickness":     "mm"
+  },
+  "value_normalizations": {
+    "surface": {
+      "Int": "internal",
+      "Ext": "external",
+      "I":   "internal",
+      "E":   "external"
+    }
+  },
+  "notes": "DRAFT — Onstream's commercial Magnetic Eddy Current (MEC) outputs vary by integrity-engineer preference. Clock is often expressed in degrees (0-360) rather than hh:mm; the converter maps degrees → hh:mm at transform time. USER MUST CONFIRM."
+}

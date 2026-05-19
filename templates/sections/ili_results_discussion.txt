@@ -1,0 +1,9 @@
+The {{RUN2_YEAR}} inspection reported {{TOTAL_FEATURES_RUN2}} metal-loss features above the {{POD_PCT}}% wall-thickness probability-of-detection threshold. Of these, {{INTERNAL_COUNT}} were classified as internal-surface defects ({{INTERNAL_PCT}}% of the total) and {{EXTERNAL_COUNT}} as external ({{EXTERNAL_PCT}}%).
+
+The defect-depth distribution is dominated by features in the 10-20% WT range, consistent with general corrosion at low-to-moderate severity. Features deeper than 50% WT account for {{DEEP_FEATURE_PCT}}% of the total; the deepest single defect measures {{MAX_DEPTH_PCT}}% WT at chainage {{MAX_DEPTH_CHAINAGE_M}} m.
+
+Axial-length distribution shows the majority of defects below 50 mm — i.e. pitting-class anomalies under POF 110 classification. Circumferential-width distribution is similarly narrow, with width above 100 mm comprising a small minority of the population.
+
+Orientation analysis (clock position) shows the typical bottom-of-pipe peak for internal corrosion, with the cluster between 4 and 8 o'clock accounting for the majority of internal features — consistent with water settling in low points along the line.
+
+The shape categorization (POF 110 dimension classes) of the reported features is summarised in the table below.

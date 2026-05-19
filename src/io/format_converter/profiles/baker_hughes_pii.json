@@ -1,0 +1,37 @@
+{
+  "vendor_name": "Baker Hughes / PII Pipetronix (DRAFT)",
+  "sheet_name": "Anomalies",
+  "header_row": 0,
+  "column_mappings": {
+    "anomaly_id":             "Feature ID",
+    "abs_distance_m":         "Distance",
+    "upstream_weld_dist_m":   "Distance to U/S Weld",
+    "joint_number":           "Joint",
+    "wt_mm":                  "Wall Thickness",
+    "depth_pct_wt":           "Depth",
+    "length_mm":              "Length",
+    "width_mm":               "Width",
+    "clock_position":         "Clock",
+    "surface":                "Side",
+    "feature_identification": "Feature Type",
+    "description":            "Comments"
+  },
+  "unit_conventions": {
+    "chainage":           "km",
+    "upstream_weld_dist": "m",
+    "depth":              "%",
+    "clock":              "hh:mm",
+    "length":             "mm",
+    "width":              "mm",
+    "wall_thickness":     "mm"
+  },
+  "value_normalizations": {
+    "surface": {
+      "I":  "internal",
+      "E":  "external",
+      "IN": "internal",
+      "EX": "external"
+    }
+  },
+  "notes": "DRAFT — Baker Hughes / PII deliverables vary considerably across pipeline-services lines (Pipetronix legacy vs Baker Hughes Process & Pipeline Services merged). Distance is often reported in km; sheet name varies ('Anomalies' / 'Feature List'). USER MUST CONFIRM against an actual deliverable before relying on this profile."
+}

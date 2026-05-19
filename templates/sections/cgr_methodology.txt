@@ -1,0 +1,60 @@
+## 4.1 ILI Reports Assessment
+
+The two inspection datasets ({{RUN1_YEAR}} and {{RUN2_YEAR}}) were aligned at the joint level using Needleman-Wunsch sequence alignment on joint length signatures, anchored by absolute chainage. The alignment produced {{JOINT_MATCH_COUNT}} matched joint pairs out of a possible {{TOTAL_JOINTS_RUN2}} joints in the {{RUN2_YEAR}} run, a match rate of {{JOINT_MATCH_RATE_PCT}}% with {{MONOTONICITY_VIOLATIONS}} chainage reversals (zero violations indicates the alignment preserves run-order consistency).
+
+Within each matched joint pair, individual metal-loss features were matched between runs using Hungarian assignment on a cost matrix combining axial position, clock orientation, surface side, and depth-shrinkage plausibility. The defect-matching pipeline identified {{DEFECT_MATCH_COUNT}} cross-run pairs out of {{RUN1_FEATURE_COUNT}} {{RUN1_YEAR}} features and {{RUN2_FEATURE_COUNT}} {{RUN2_YEAR}} features.
+
+## 4.2 Repair Prediction Methodology
+
+Corrosion growth rates are determined as follows:
+
+  * **Matched defects**: CGR = max(0, (depth_run2 − depth_run1) / years_between). Negative growth is clamped to zero (corrosion does not physically shrink; apparent reduction is attributed to tool measurement variability).
+  * **Unmatched run-2 defects**: features reported only in the later run are assumed to have been below the {{POD_PCT}}% WT probability-of-detection threshold at the earlier run. The CGR is then computed assuming depth_old = {{POD_PCT}}% × WT, which is the most conservative non-zero growth rate consistent with the tool's detection limit.
+
+To capture the population-level upper bound on growth, the 95th percentile (P95) of the feature-specific CGRs is computed separately for internal and external defects. In **{{CGR_MODE}}** mode, every defect's used growth rate is `max(feature_cgr, surface_P95)` — features that happen to grow slowly are not allowed to escape the population-level expectation.
+
+The repair-year prediction simulates each defect's depth forward year by year, recomputing Psafe/ERF at each step. Two stop conditions are checked, whichever fires first:
+
+  * depth ≥ 80% WT (depth-only repair criterion), OR
+  * ERF ≥ 1.0 (insufficient pressure capacity).
+
+The year at which either trigger first fires is the predicted repair year. If neither fires within the {{HORIZON_YEARS}}-year horizon ending {{HORIZON_END_DATE}}, the defect is reported as "no action required within horizon."
+
+## 4.3 Response to Pipeline ILI Results (API 1160 Categories)
+
+Per API 1160 §11.5, metal-loss findings are placed into one of three response categories based on their predicted time-to-repair:
+
+  * **Immediate Action**: features with ERF ≥ 1.0 today or depth ≥ 80% WT today — these are addressed before continued operation.
+  * **Scheduled Action**: features projected to reach a trigger condition within 5 years of the most recent inspection — investigation and engineering assessment within 1 year, repair within 5 years.
+  * **Monitor**: features projected to remain below both triggers for the full {{HORIZON_YEARS}}-year horizon — re-inspect at the operator's next scheduled ILI interval.
+
+The current population distribution across these categories is:
+
+  * Immediate Action: {{COUNT_IMMEDIATE}} feature(s)
+  * Scheduled Action: {{COUNT_SCHEDULED}} feature(s)
+  * Monitor: {{COUNT_MONITOR}} feature(s)
+
+## 4.4 Recommended Repair Methods
+
+For features requiring repair, the operator's standard repair methods include:
+
+  * **Type-A composite sleeve (e.g. Clock Spring, NRI, ARMOR plate)** for defects with depth less than 80% WT and no through-wall risk. The composite is designed to a hoop stress of MAOP and laminated over the defect after surface preparation.
+  * **Type-B steel sleeve** for through-wall or near-through-wall defects. The sleeve is welded to the parent pipe and provides pressure containment independent of the underlying material.
+  * **Cut-and-replace** for short pipe segments with multiple severe defects or where the repair would interfere with girth welds.
+  * **Hot-tap sleeve with welded saddle** where the line cannot be depressurised.
+
+The selection of the repair method for each feature is the operator's call, informed by site access, depressurisation feasibility, and the local pipe support / coating condition.
+
+## 4.5 Integrity Management
+
+This FFP report is one input into the broader pipeline integrity-management programme. The operator should:
+
+  1. Address all "Immediate Action" defects before resuming or continuing operation at MAOP.
+  2. Plan scheduled-action repairs within their stated time windows.
+  3. Re-inspect the line via ILI at the standard {{REINSPECTION_INTERVAL_YEARS}}-year interval, or sooner if any of the population-level findings (high median CGR, ERF-near-1 cluster, unexpected new-feature population) warrant.
+  4. Maintain the cathodic-protection (CP) survey schedule, the right-of-way patrol cadence, and the operator's standard SCADA pressure-excursion review — these reduce the probability that new corrosion initiates between inspections.
+  5. Review the assumptions in this report (especially the run-2-only feature depth-old assumption of {{POD_PCT}}% WT) against the next ILI run's findings and re-baseline if the population CGR has materially shifted.
+
+## 4.6 Conclusions and Recommendations
+
+{{CONCLUSIONS_NARRATIVE}}

@@ -1,0 +1,11 @@
+A fitness-for-purpose assessment evaluates the remaining strength of a corroded pipe section against its required operating pressure. The {{PRIMARY_FFP_METHOD}} method is used as the primary assessment, with Kastner applied to circumferentially-oriented defects per the project methodology.
+
+For each metal-loss feature reported in the {{RUN2_YEAR}} ILI, the safe operating pressure (Psafe) is computed from the defect's measured depth, axial length, the pipe's wall thickness and material grade, and the operator's design factor. The Estimated Repair Factor (ERF) is then the ratio of the maximum allowable operating pressure to the calculated Psafe:
+
+    ERF = MAOP / Psafe
+
+A feature with ERF < 1.0 has predicted Psafe above MAOP; a feature with ERF ≥ 1.0 has predicted Psafe at or below MAOP and is flagged for immediate repair.
+
+The acceptance charts below plot every assessed feature in length-vs-depth space, with the ERF = 1.0 acceptance boundary overlaid. Features above this curve fall outside the safe-operation envelope and would require repair regardless of remaining-life considerations.
+
+Of the {{TOTAL_FEATURES_RUN2}} features assessed, {{COUNT_ERF_GE_1}} have ERF ≥ 1.0 and {{COUNT_DEPTH_GE_80}} have measured depth ≥ 80% WT. The maximum recorded ERF is {{MAX_ERF}}, observed at feature ID {{MAX_ERF_FEATURE_ID}}, joint {{MAX_ERF_JOINT}}, chainage {{MAX_ERF_CHAINAGE_M}} m.

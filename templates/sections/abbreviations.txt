@@ -1,0 +1,27 @@
+ABS — Abbreviations and Symbols
+API — American Petroleum Institute
+ASME — American Society of Mechanical Engineers
+B31G — ASME B31G "Manual for Determining the Remaining Strength of Corroded Pipelines"
+CGR — Corrosion Growth Rate (mm/yr)
+COCL — Corrosion Cluster (POF 110)
+CORR — Corrosion (POF 110)
+DENT — Dent (POF 110)
+DNV — Det Norske Veritas
+ERF — Estimated Repair Factor (MAOP / Psafe; high ERF indicates lower safety margin)
+FFP — Fitness-For-Purpose
+ID — Inside Diameter
+ILI — In-Line Inspection
+LPG — Liquefied Petroleum Gas
+MAOP — Maximum Allowable Operating Pressure
+MFL — Magnetic Flux Leakage
+OD — Outside Diameter
+PINH — Pinhole (POF 110)
+PITT — Pitting (POF 110)
+POD — Probability of Detection (typically 10% WT for MFL-A tools at 80% confidence)
+POF — Pipeline Operators Forum (specification 110 governs ILI data exchange)
+Psafe — Safe Operating Pressure (kg/cm²)
+RSTRENG — Remaining Strength (PRCI / Kiefner & Vieth, 1989)
+SMYS — Specified Minimum Yield Strength (MPa)
+SOP — Safe Operating Pressure (synonym for Psafe)
+UTS — Ultimate Tensile Strength (MPa)
+WT — Wall Thickness (mm)

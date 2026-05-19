@@ -1,0 +1,22 @@
+## 1.1 Background
+
+{{CLIENT_NAME}} operates the {{PIPELINE_NAME}} pipeline ({{PIPELINE_LENGTH_KM}} km, {{DIAMETER_INCHES}}-inch nominal diameter, transporting {{PRODUCT}}). Two in-line inspections of the pipeline have been completed: an earlier baseline run on {{RUN1_DATE}} and a follow-up survey on {{RUN2_DATE}}, an interval of {{YEARS_BETWEEN}} years.
+
+The purpose of this report is to assess the fitness-for-purpose (FFP) of the pipeline based on the metal-loss anomalies reported by the inspection vendor, determine corrosion growth rates from the run-to-run comparison, and forecast the date by which any anomaly will require repair under the operator's continued operation of the line at {{MAOP_KGCM2}} kg/cm² maximum allowable operating pressure.
+
+## 1.2 Scope
+
+This report covers:
+
+  * Reconciliation and joint-level alignment of the two ILI datasets.
+  * Defect-level matching of metal-loss anomalies between the two runs.
+  * Calculation of feature-specific and population-aggregate corrosion growth rates.
+  * Fitness-for-purpose assessment using ASME B31G {{FFP_METHOD}} as the primary method, with Kastner applied to circumferential defects.
+  * Forward projection of the 10-year repair date for every metal-loss anomaly under the assumed growth rate.
+  * Response classification per API 1160 and recommendation of repair actions.
+
+This report does not assess dents, weld anomalies, third-party damage, or stress-corrosion cracking — those features fall outside the metal-loss scope and are addressed by separate engineering reports.
+
+## 1.3 Pipeline Details
+
+The pipeline parameters used in this assessment are summarised in the following table.

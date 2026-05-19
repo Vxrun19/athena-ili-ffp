@@ -1,0 +1,36 @@
+{
+  "vendor_name": "NDT Global EmatPlus / Evo UT (DRAFT)",
+  "sheet_name": "Defects",
+  "header_row": 0,
+  "column_mappings": {
+    "anomaly_id":             "Anomaly_ID",
+    "abs_distance_m":         "Chainage",
+    "upstream_weld_dist_m":   "Distance_To_US_Weld",
+    "joint_number":           "Joint_Number",
+    "wt_mm":                  "WT_Nominal",
+    "depth_mm":               "Depth",
+    "length_mm":              "Length",
+    "width_mm":               "Width",
+    "clock_position":         "Clock_Position",
+    "surface":                "Surface",
+    "feature_identification": "POF_Acronym",
+    "dimension_class":        "POF_Class"
+  },
+  "unit_conventions": {
+    "chainage":           "m",
+    "upstream_weld_dist": "m",
+    "depth":              "mm",
+    "clock":              "hh:mm",
+    "length":             "mm",
+    "width":              "mm",
+    "wall_thickness":     "mm"
+  },
+  "value_normalizations": {
+    "surface": {
+      "Internal": "internal",
+      "External": "external",
+      "Midwall":  "midwall"
+    }
+  },
+  "notes": "DRAFT — NDT Global's EmatPlus and Evo platforms are ultrasonic (UT), so depth is reported as a remaining-wall-derived mm value rather than %WT directly. The converter converts depth_mm → depth_pct_wt using wt_mm at transform time. USER MUST CONFIRM column names and underscore-vs-space conventions against an actual deliverable."
+}

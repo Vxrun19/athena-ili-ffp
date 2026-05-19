@@ -1,0 +1,544 @@
+# Column Synonyms Configuration
+# Maps real column headers from various ILI vendor formats to canonical internal field names.
+# Derived from POF 110 (2021) + observed real-world deliveries from:
+#   - Athena PowerTech / NGP (single-sheet 2019 format, multi-sheet 2023+ format, older 2018 format)
+#   - Generic POF-compliant formats (most major vendors converge here)
+#
+# Matching is case-insensitive, whitespace-normalised, punctuation-tolerant.
+# Order matters: more specific patterns first.
+
+# ============================================================================
+# REQUIRED CANONICAL FIELDS
+# ============================================================================
+
+abs_distance_m:
+  # POF 110 canonical: "Log distance"
+  # Field: absolute chainage from launcher, in metres
+  synonyms:
+    - "log dist. [m]"                       # NGP single-sheet 2019
+    - "log dist"
+    - "log distance"
+    - "log distance-(mtrs)"                 # GAIL Samakhiali annexures
+    - "log distance, m"
+    - "log distance, mtrs"
+    - "abs. distance, m"                    # Athena 2018 Pipe Tally, FFP Annexures
+    - "abs. distance"
+    - "abs. distance (m)"
+    - "abs distance"
+    - "absolute distance, m"                # NGP multi-sheet 2023+
+    - "absolute distance, mtrs"
+    - "absolute distance"
+    - "absolute distance \n[m]"
+    - "absolute distance [m]"
+    - "chainage-(mtrs)"                     # GAIL FFP annexure
+    - "chainage, m"
+    - "chainage"
+
+joint_number:
+  # POF 110: implicit via L joint feature
+  # Field: integer joint identifier
+  synonyms:
+    - "joint number"                        # NGP multi-sheet, Athena 2018
+    - "joint no."
+    - "joint no"
+    - "j.no."                               # NGP single-sheet 2019
+    - "j.no"
+    - "joint"
+    - "pipe number"
+    - "pipe no"
+    - "pipe no."
+
+joint_length_m:
+  # POF 110: "L joint"
+  synonyms:
+    - "joint length"
+    - "joint length, m"
+    - "joint length (m)"
+    - "joint length \n(m)"
+    - "joint length [m]"
+    - "j.len. [m]"                          # NGP single-sheet 2019
+    - "j.len."
+    - "j.length"
+    - "jlen"
+    - "pipe length, m"                      # NGP multi-sheet "Pipe" sheet
+    - "pipe length"
+
+upstream_weld_dist_m:
+  # POF 110: "Up weld dist."
+  # Field: distance from feature to upstream girth weld
+  synonyms:
+    - "to u/s w. [m]"                       # NGP single-sheet 2019
+    - "to u/s w."
+    - "to u/s w"
+    - "distance to u/s gw, m"               # Athena 2018 Pipe Tally
+    - "distance to u/s gw"
+    - "distance to upstream weld"
+    - "distance to upstream gw"
+    - "up weld dist."                       # POF canonical
+    - "up weld dist"
+    - "upstream weld distance"
+    - "dist u/s gw"
+    - "distance to closet weld (m)"         # NGP FFP Annexure F (note typo "closet")
+    - "distance to closest weld (m)"
+    - "distance to closest weld"
+    - "ref. distance upstream gw, m"        # NGP reference points table
+    - "ref. distance upstream gw"
+    - "relative distance, m"                # NGP multi-sheet alternative
+    - "relative distance"
+
+wt_mm:
+  # POF 110: "Nominal t" or "Reference t"
+  # Field: wall thickness in mm
+  synonyms:
+    - "wall thickness, (mm)"                # GAIL Samakhiali Annexures
+    - "wall thickness, mm"
+    - "wall thickness [mm]"
+    - "wall thickness [mm]\n"
+    - "wall thickness"
+    - "t [mm]"                              # NGP single-sheet 2019
+    - "t, mm"
+    - "wt, mm"                              # NGP multi-sheet 2023+
+    - "wt (mm)"
+    - "wt"
+    - "nominal wt"
+    - "nominal wall thickness, mm"
+    - "nominal wall thickness"
+    - "nominal t"                           # POF canonical
+    - "reference t"
+
+depth_pct_wt:
+  # POF 110: "d (peak)" — as % of remaining wall thickness
+  # Field: depth as percentage of WT (0-100)
+  synonyms:
+    - "depth, %"
+    - "depth, % wt"
+    - "depth, % wt/ od"                     # NGP multi-sheet — combined ML/dent column
+    - "depth, %wt"
+    - "depth, %wt/ od"
+    - "depth, % wt\n"
+    - "depth (% wt)"
+    - "depth [% wt]"
+    - "depth \n[% wt]"
+    - "depth\n[% wt]"
+    - "depth %"
+    - "depth %wt"
+    - "feature depth, %"
+    - "feature depth %"
+    - "feature depth (%)"
+    - "anomaly depth, (%)"                  # NGP FFP Annexure E
+    - "anomaly depth"
+    - "wl [%]"                              # NGP single-sheet 2019 (wall loss)
+    - "wl"
+    - "reported depth"
+    - "reported depth\n[% wt]"
+    - "\nreported depth\n[% wt]"
+    - "peak depth"
+    - "d (peak)"                            # POF canonical
+    - "d peak"
+
+length_mm:
+  # POF 110: "Length"
+  synonyms:
+    - "length, mm"
+    - "length [mm]"
+    - "length (mm)"
+    - "length"
+    - "length [mm]"
+    - "length [mm] "
+    - "length (mm)  "
+    - "axial length, mm"                    # Athena 2018 Pipe Tally
+    - "axial length"
+    - "length, (mm)"
+
+width_mm:
+  # POF 110: "Width"
+  synonyms:
+    - "width, mm"
+    - "width [mm]"
+    - "width (mm)"
+    - "width"
+    - "width    (mm)"
+    - "width, (mm)"
+
+clock_position:
+  # POF 110: "Clock position"
+  # Internal storage: decimal hours [0.0, 12.0)
+  # Accepts: "hh:mm" strings, decimal hours, degrees
+  synonyms:
+    - "orientation, h:min"                  # NGP multi-sheet 2023+
+    - "orientation, h : min"                # NGP 1ZSZ 2024+ (spaces around colon)
+    - "orientation, hh:min"
+    - "orientation (hh:mm)"
+    - "orientation (hh:mm) "                # trailing space in NGP FFP Annexure F
+    - "orientation, hh:mm"
+    - "orientation hh:mm"
+    - "orientation o'clock"                 # Athena 2018 Pipe Tally
+    - "orientation"
+    - "anomaly orientation"                 # NGP FFP Annexure E
+    - "o'clock"                             # NGP single-sheet 2019
+    - "oclock"
+    - "clock position"                      # POF canonical
+    - "clock"
+
+surface:
+  # POF 110: "Surface location" — enum INT/EXT/MID/UNDEFINED
+  # Internal storage: "internal" / "external" / "midwall"
+  synonyms:
+    - "surf. loc."                          # NGP single-sheet 2019: INT/EXT
+    - "surf. loc"
+    - "surface location"
+    - "surface"
+    - "wall side"                           # NGP multi-sheet 2023+: int./ext.
+    - "side"
+    - "wall_side"
+    - "location"                            # Athena 2018 Pipe Tally: Internal/External
+    - "anomaly location"                    # NGP FFP Annexure E
+    - "int/ext"
+
+feature_type:
+  # POF 110: "Feature type" — enum (anomaly vs component)
+  synonyms:
+    - "feature type"
+    - "feature_type"
+    - "type"
+    - "pof feature type"                    # NGP multi-sheet 2023+
+    - "feature classification"
+
+feature_identification:
+  # POF 110: "Feature identification" — enum CORR/COCL/DENT/etc.
+  # Reader prefers POF acronym column when present (direct code mapping).
+  synonyms:
+    - "pof acronym"                         # NGP multi-sheet — direct codes (CORR / COCL / DENT)
+    - "feature identification"              # NGP single-sheet, Athena 2018
+    - "feature id"                          # POF canonical (but also commonly used for anomaly_id)
+    - "pof feature identification"          # NGP multi-sheet 2023+
+    - "identification"
+    - "feature description"
+    - "event"                               # NGP FFP Annexure F
+    - "comments"                            # Athena severity list
+
+description:
+  # Free-text per-row description ("metal loss", "metal loss (grouped)",
+  # "corrosion cluster adj. SW", …). The reader reads this to identify
+  # cluster CHILDREN via value_normalisations.cluster_child_markers; the
+  # categorical fid enum lives on feature_identification (above).
+  synonyms:
+    - "description"                         # NGP multi-sheet 2023+ Defects sheet
+    - "anomaly description"
+
+dimension_class:
+  # POF 110: "Feature class" — enum GENE/PITT/PINH/AXGR/AXSL/CIGR/CISL
+  synonyms:
+    - "pof dimension classification"        # NGP multi-sheet 2023+
+    - "dimension class"
+    - "dimension classification"
+    - "dim_o"                               # NGP single-sheet 2019 (cryptic abbreviation)
+    - "dim"
+
+anomaly_id:
+  # Vendor's internal numeric ID for the defect
+  synonyms:
+    - "anomaly id"                          # NGP FFP Annexure E
+    - "feature id"                          # ⚠ overloaded — context-dependent
+    - "feature_id"
+    - "feature number"
+    - "anomaly_id"
+    - "id"
+    - "#"
+    - "s.n."
+    - "sn"
+
+# ============================================================================
+# OPTIONAL / DERIVED FIELDS
+# ============================================================================
+
+erf:
+  # Vendor-pre-computed ERF (saves recomputation for QA cross-check)
+  synonyms:
+    - "erf"
+    - "erf (b31g)"                          # NGP multi-sheet, 1ZSV
+    - "erf (mod. b31g)"                     # NGP multi-sheet, 1YCF
+    - "erf asme b31g"
+    - "erf asme b-31g"
+    - "erf asme b-31g original"             # GAIL Samakhiali Annexure C
+    - "erf b31g"
+    - "erf asme b31g modified"
+    - "erf        asme b31g"                # Athena 2018 (multiple spaces)
+
+psafe:
+  # Vendor-pre-computed safe operating pressure
+  synonyms:
+    - "psafe"
+    - "psafe, kg/cm2"                       # NGP multi-sheet
+    - "psafe, kg/cm²"
+    - "psafe asme b31g, (kg/cm²)"
+    - "psafe asme b-31g, (kg/cm²)"
+    - "psafe kg/cm2"
+    - "p safe"
+    - "sop"
+    - "sop (kg/cm2)"
+    - "sop (kg/cm2)- asme b-31g original"   # GAIL Samakhiali
+    - "sop (kg/cm2)- kastner approach"      # GAIL Samakhiali
+
+latitude:
+  synonyms:
+    - "latitude"
+    - "latitude, °"
+    - "latitude [°]"
+    - "lat"
+    - "northing"
+    - "latitude/northing"
+
+longitude:
+  synonyms:
+    - "longitude"
+    - "longitude, °"
+    - "longitude [°]"
+    - "long"
+    - "lon"
+    - "easting"
+    - "longitude/easting"
+
+altitude_m:
+  synonyms:
+    - "altitude"
+    - "altitude, m"
+    - "height, m"
+    - "heighting [m]"                       # NGP single-sheet 2019 typo
+    - "height"
+    - "elevation"
+
+# ============================================================================
+# ENUMERATED VALUES — NORMALISATION RULES
+# ============================================================================
+
+value_normalisations:
+  surface:
+    internal: ["int", "int.", "internal", "i", "in", "inner"]
+    external: ["ext", "ext.", "external", "e", "ex", "outer", "out"]
+    midwall:  ["mid", "midwall", "m", "mw"]
+    unknown:  ["", "n/a", "na", "undefined", "unk", "?"]
+
+  feature_identification:
+    # Map free-text vendor descriptions to canonical POF codes.
+    # Reader applies these BEFORE constructing the FeatureIdentification enum.
+    CORR:                                    # corrosion (single feature)
+      - "corr"
+      - "corrosion"
+      - "metal loss"
+      - "metal loss (grouped)"
+      - "metal loss adj. gw"
+      - "metal loss adj. sw"
+      - "metal loss adj. lw"
+      - "pitting"
+      - "pinhole"
+      - "general corrosion"
+      - "axial grooving"
+      - "axial slotting"
+      - "circumferential grooving"
+      - "circumferential slotting"
+      - "circum. grooving"
+      - "circum. slotting"
+    COCL:                                    # corrosion cluster (parent row)
+      - "cocl"
+      - "corrosion cluster"
+      - "corrosion cluster adj. sw"
+      - "corrosion cluster adj. gw"
+      - "corrosion cluster adj. gw/sw"
+      - "corrosion cluster adj. lw"
+    MIAN:                                    # manufacturing / mill anomaly
+      - "mian"
+      - "mill"
+      - "mill anomaly"
+      - "mill fault"
+      - "manufacturing"
+      - "mfg"
+      - "manufacturing anomaly"
+    MIAC:                                    # manufacturing cluster
+      - "miac"
+      - "manufacturing cluster"
+    DENT:
+      # Map every dent variant the vendors emit to the single DENT code.
+      # Dents are out of scope for B31G/RSTRENG; the reader drops them
+      # via _NON_METAL_LOSS_FIDS at the end of the per-row parse.
+      #
+      # The Abu Road / 1ZYC PDF surfaced a missing variant ("Dent
+      # complex" / DENC) which leaked into FFP and produced a bogus
+      # ERF=8.57 because the 0.9 in the Depth column means 0.9% OD (a
+      # dent thing) and the FFP engine assumed 90% WT. Make sure EVERY
+      # commonly-seen vendor string for a dent ends up in this bucket.
+      - "dent"
+      - "denp"                              # POF: plain dent
+      - "dent plain"
+      - "plain dent"
+      - "denk"                              # POF: kinked dent
+      - "dent kinked"
+      - "kinked dent"
+      - "denc"                              # POF: dent w/ crack-like / complex
+      - "dent complex"                      # NGP human label, 1ZYC 2023
+      - "complex dent"
+      - "dent with crack"
+      - "dent with crack-like"
+      - "dent with crack indication"
+      - "dens"                              # POF: dent (other variant seen in some tallies)
+      - "dend"                              # POF: dent dimple
+      - "denb"                              # POF: dent / bump
+      - "dent dimple"
+      - "dent with additional feature"      # NGP description, 1ZYC 2023
+      - "area of dent"
+    DEML:
+      - "deml"
+      - "dent with metal loss"
+      - "dent w/ metal loss"
+      - "dent w/ ml"
+    CRAC:
+      - "crac"
+      - "crack"
+      - "crack-like"
+      - "lwcr"                              # POF: long-weld crack-like
+      - "longitudinal weld crack"
+      - "longitudinal weld crack-like"
+    GWAN:
+      - "gwan"
+      - "girth weld anomaly"
+    SWAN:
+      - "swan"
+      - "spiral weld anomaly"
+    LWAN:
+      - "lwan"
+      - "longitudinal weld anomaly"
+
+  dimension_class:
+    # Map free-text dimension class to canonical POF codes.
+    GENE:
+      - "gene"
+      - "general"
+      - "general corrosion"
+    PITT:
+      - "pitt"
+      - "pitting"
+    PINH:
+      - "pinh"
+      - "pinhole"
+    AXGR:
+      - "axgr"
+      - "axial grooving"
+    AXSL:
+      - "axsl"
+      - "axial slotting"
+    CIGR:
+      - "cigr"
+      - "circum. grooving"
+      - "circumferential grooving"
+    CISL:
+      - "cisl"
+      - "circum. slotting"
+      - "circumferential slotting"
+
+  cluster_child_markers:
+    # Substrings (case-insensitive, after _norm) in the Description column
+    # that identify a row as a CHILD of a cluster parent rather than a
+    # standalone defect. Used by the reader to populate
+    # Feature.cluster_parent_id so that ILIRun.features_for_assessment()
+    # can exclude children from the FFP-relevant count (their parent COCL
+    # row carries the assessed dimensions).
+    - "grouped"
+    - "in cluster"
+    - "child"
+
+  feature_type_anomaly:
+    # Strings that mean "this row is an anomaly worth analysing"
+    is_anomaly:
+      - "anomaly"
+      - "metal loss"
+      - "metal loss (grouped)"
+      - "metal loss adj. gw"
+      - "metal loss adj. sw"
+      - "metal loss adj. lw"
+      - "corrosion"
+      - "corrosion cluster"
+      - "corrosion cluster adj. sw"
+      - "corrosion cluster adj. gw"
+      - "corrosion cluster adj. gw/sw"
+      - "corrosion cluster adj. lw"
+      - "pitting"
+      - "pinhole"
+      - "general corrosion"
+      - "axial grooving"
+      - "axial slotting"
+      - "circumferential grooving"
+      - "circumferential slotting"
+      - "circum. grooving"
+      - "circum. slotting"
+      - "mfg"                               # manufacturing metal loss (Athena 2018)
+      - "mill anomaly"
+      - "mill fault"                        # may be excluded depending on policy
+    
+    # Strings that mean "skip this row, it's not a metal-loss anomaly"
+    skip:
+      - "weld"
+      - "girth weld"
+      - "longitudinal weld"
+      - "spiral weld"
+      - "valve"
+      - "tee"
+      - "t-piece"
+      - "flange"
+      - "joint flange"
+      - "bend"
+      - "casing"
+      - "casing (start)"
+      - "casing (end)"
+      - "casing (start) (eccentric)"
+      - "casing (end) (eccentric)"
+      - "magnet"
+      - "ball valve (center)"
+      - "ball valve section"
+      - "valve pipe"
+      - "valve (stem)"
+      - "spiral weld section"
+      - "longitudinal weld section"
+      - "data recording begin"
+      - "data recording end"
+      - "external support"
+      - "support"
+      - "attachment"
+      - "offtake"
+      - "off take"
+      - "tap"
+      - "pipeline fixture"
+      - "spiral weld anomaly"               # depends on policy; default skip for ML analysis
+      - "girth weld anomaly"
+      - "dent"                              # dent assessed separately, not via B31G
+      - "ripple"
+      - "metal object"
+      - "material anomaly"
+      - "overlap"
+      - "deposit"
+      - "repair"
+      - "sleeve"
+      - "patch"
+
+# ============================================================================
+# CLOCK POSITION PARSING
+# ============================================================================
+
+clock_position_formats:
+  # Internal storage is decimal hours, range [0.0, 12.0).
+  # Wraparound: 11:30 + 1:00 = 0:30 (1 hour apart, not 11).
+  
+  # Format detectors (regex):
+  hh_mm_string:
+    pattern: '^(\d{1,2})[:.](\d{2})(?::(\d{2}))?$'      # "5:14", "05:14", "05:14:00"
+    
+  decimal_hours:
+    # Bare number 0-12: treat as decimal hours
+    range: [0.0, 12.0]
+    
+  decimal_degrees:
+    # Bare number > 12 but <= 360: treat as degrees
+    range: [12.001, 360.0]
+    conversion: "degrees / 30.0"
+
+  # 12:00 == 0:00 — normalise to 0.0
+  normalise_12_to_0: true

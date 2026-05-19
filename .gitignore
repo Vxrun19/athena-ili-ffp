@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# PyInstaller / Inno Setup build outputs
+build/
+dist/
+*.spec
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Test/cache
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+_build_stdout.log
+_version.py.bak
+
+# OS junk
+.DS_Store
+Thumbs.db

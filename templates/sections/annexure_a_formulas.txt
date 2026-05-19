@@ -1,0 +1,87 @@
+### A.1 ASME B31G Original (Level 1 method)
+
+Reference: ASME B31G-2012 Section 4.
+
+  z   = L² / (D · t)              (dimensionless length parameter)
+  Sflow = 1.1 · SMYS              (flow stress)
+
+  For z ≤ 20:
+      M = sqrt(1 + 0.8·z)         (Folias factor)
+      A/A₀ = (2/3)·(d/t)          (parabolic-profile area ratio)
+      Pf = (2·Sflow·t/D) · [(1 − Q) / (1 − Q/M)],   Q = (2/3)(d/t)
+
+  For z > 20 (long-defect asymptote):
+      Pf = (2·Sflow·t/D) · (1 − d/t)
+
+  Psafe = Pf · Fd          (apply design factor)
+  ERF   = MAOP / Psafe
+
+### A.2 ASME B31G Modified (0.85·dL method)
+
+Reference: ASME B31G-2012 Section 5.
+
+  Sflow = SMYS + 69 MPa           (= SMYS + 10 ksi)
+
+  For z ≤ 50:
+      M = sqrt(1 + 0.6275·z − 0.003375·z²)
+  For z > 50:
+      M = 0.032·z + 3.3
+
+  SF    = Sflow · [(1 − 0.85·d/t) / (1 − 0.85·d/t / M)]
+  Pf    = 2 · SF · t / D
+  Psafe = Pf · Fd
+
+### A.3 RSTRENG (Effective-Area Method)
+
+Reference: Kiefner & Vieth (1989), PRCI / AGA.
+
+In its full form, RSTRENG integrates the river-bottom depth profile along the defect. When no profile is available (the norm for ILI-data deliveries) the 0.85·dL approximation is used, which is mathematically identical to ASME B31G Modified Section 5.
+
+### A.4 DNV-RP-F101 Part B (ASD format)
+
+Reference: DNV-RP-F101 (2017), Section 4.
+
+  Q   = sqrt(1 + 0.31 · z)
+  Pf  = (2·UTS·t / (D − t)) · [(1 − d/t) / (1 − (d/t)/Q)]
+  Psafe = Pf · Fd_DNV
+
+When UTS is unknown, the line-pipe correlation UTS ≈ SMYS + 110 MPa is applied.
+
+### A.5 Kastner (Circumferential Defects)
+
+Reference: Kastner et al. (1986). Net-section approximation form used in this report:
+
+  σ_axial,fail = Sflow · (1 − (W / (π·D))·(d/t))
+  Pf_axial     = 4 · σ_axial,fail · t / D
+  Psafe        = Pf_axial · Fd
+
+For axially-oriented defects, B31G's hoop-direction Psafe governs. For circumferentially-oriented defects (CISL, CIGR), the lower of B31G and Kastner Psafe is the controlling case.
+
+### A.6 Corrosion Growth Rate
+
+For each matched defect:
+  CGR_feature = max(0, (depth_run2_mm − depth_run1_mm) / years_between)
+
+For unmatched run-2 defects (run-1 reported nothing at that location):
+  depth_run1_mm = (POD_pct / 100) · WT          (POD_pct typically 10)
+  CGR_feature   = (depth_run2_mm − depth_run1_mm) / years_between
+
+The population-aggregate CGR is taken as the 95th percentile of the feature-specific CGRs, computed separately for internal and external defects.
+
+### A.7 Repair-Year Prediction
+
+For each defect, depth is projected year by year as:
+  depth(year) = depth_now + CGR · year
+
+At each year the FFP method is re-invoked. Repair year = first year at which either:
+  depth(year) ≥ 80% WT,  OR
+  ERF(year) ≥ 1.0,
+whichever fires first. If neither fires within the {{HORIZON_YEARS}}-year horizon, no repair is predicted.
+
+### A.8 Conventions
+
+  * Distances in metres (chainage) and millimetres (defect dimensions).
+  * Pressures in kg/cm² (Indian industry convention; 1 bar = 1.0197 kg/cm²).
+  * SMYS in MPa.
+  * Clock position as decimal hours, range [0.0, 12.0); 12:00 ≡ 0.0.
+  * Surface side encoded as "int." / "ext." per POF 110.
