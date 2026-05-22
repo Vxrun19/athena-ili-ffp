@@ -265,6 +265,28 @@ class TestKandlaContent:
         first_data_erf = float(erf_table.rows[1].cells[-1].text)
         assert first_data_erf == pytest.approx(max_erf, abs=1e-4)
 
+    def test_max_erf_line_has_numeric_joint_and_chainage(self, kandla_report_path):
+        """v0.3.6 FIX B: the FFP-analysis max-ERF sentence must populate
+        the joint number and chainage from the feature record — it used
+        to emit em-dash placeholders ('joint —, chainage — m')."""
+        import re as _re
+        doc = Document(str(kandla_report_path))
+        line = next(
+            (p.text for p in doc.paragraphs
+             if "maximum recorded ERF" in p.text),
+            None,
+        )
+        assert line is not None, "max-ERF sentence not found in report body"
+        assert "chainage — m" not in line and "joint —" not in line, (
+            f"max-ERF line still carries placeholder dashes: {line!r}"
+        )
+        assert _re.search(r"chainage\s+[\d.]+\s*m", line), (
+            f"max-ERF line has no numeric chainage: {line!r}"
+        )
+        assert _re.search(r"joint\s+\d+", line), (
+            f"max-ERF line has no numeric joint: {line!r}"
+        )
+
 
 # ---------------------------------------------------------------------------
 # Performance
@@ -391,3 +413,31 @@ class TestNarrativeConditional:
         )
         assert ("separate engineering reports"
                 in without["SCOPE_EXCLUSIONS_NARRATIVE"])
+
+    def test_limitations_paragraph_reconciles_with_dent_annexure(self):
+        """v0.3.6 FIX A: the disclaimer limitations paragraph must not
+        claim the report excludes dents when the dent-strain annexure
+        is present. Both branches must render cleanly."""
+        with_dent = self._placeholders(
+            run1_empty=True,
+            cgr_cfg={"mode": "feature_specific"},
+            with_dent_annexure=True,
+        )
+        lim_with = with_dent["LIMITATIONS_GEOMETRIC_NARRATIVE"]
+        # Must NOT lump dents into the excluded list...
+        assert "geometrical defects (dents" not in lim_with
+        # ...and must point at the dent-strain annexure (letter "E" in
+        # this fixture) per ASME B31.8 §851.4.1.
+        assert "ASME B31.8" in lim_with
+        assert "Annexure E" in lim_with
+        assert "ovality" in lim_with  # other geom features still excluded
+
+        without = self._placeholders(
+            run1_empty=False,
+            cgr_cfg={"mode": "hybrid"},
+            with_dent_annexure=False,
+        )
+        lim_without = without["LIMITATIONS_GEOMETRIC_NARRATIVE"]
+        # No dent annexure -> the original blanket wording is preserved.
+        assert "geometrical defects (dents, ovality)" in lim_without
+        assert "ASME B31.8" not in lim_without

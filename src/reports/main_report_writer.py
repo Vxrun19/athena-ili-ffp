@@ -1014,8 +1014,21 @@ def _build_placeholders(
         max_erf_result = max(ffp_results, key=lambda r: r.erf or 0)
         ph["MAX_ERF"] = f"{max_erf_result.erf:.4f}"
         ph["MAX_ERF_FEATURE_ID"] = max_erf_result.feature_id
-        ph["MAX_ERF_CHAINAGE_M"] = "—"
-        ph["MAX_ERF_JOINT"] = "—"
+        # Joint + chainage aren't carried on FFPResult — look them up
+        # on the feature record (cgr_results carries .feature).
+        _feat_by_id = {
+            str(c.feature.anomaly_id): c.feature
+            for c in (cgr_results or [])
+        }
+        _mx_feat = _feat_by_id.get(str(max_erf_result.feature_id))
+        if _mx_feat is not None and _mx_feat.abs_distance_m is not None:
+            ph["MAX_ERF_CHAINAGE_M"] = f"{_mx_feat.abs_distance_m:.1f}"
+        else:
+            ph["MAX_ERF_CHAINAGE_M"] = "—"
+        if _mx_feat is not None and _mx_feat.joint_number is not None:
+            ph["MAX_ERF_JOINT"] = str(_mx_feat.joint_number)
+        else:
+            ph["MAX_ERF_JOINT"] = "—"
 
     # Repair predictions
     if repair_predictions:
@@ -1211,6 +1224,35 @@ def _build_placeholders(
             "third-party damage, or stress-corrosion cracking — those "
             "features fall outside the metal-loss scope and are "
             "addressed by separate engineering reports."
+        )
+
+    # Disclaimer limitations paragraph (v0.3.6 FIX A): same conditional
+    # reconciliation as SCOPE_EXCLUSIONS_NARRATIVE — when the dent-strain
+    # annexure is present the limitations text must not claim the report
+    # "does not address … dents".
+    _dent_letter = next(
+        (lt for tid, lt in _annexes if tid == "dent_strain_b318"), ""
+    )
+    if _has_dent_annexure:
+        _annex_ref = (
+            f"Annexure {_dent_letter}" if _dent_letter
+            else "the dent-strain annexure"
+        )
+        ph["LIMITATIONS_GEOMETRIC_NARRATIVE"] = (
+            "This report does not address ovality, weld anomalies, "
+            "third-party damage, or environmental cracking; those "
+            "features fall under separate engineering analyses and the "
+            "operator's general integrity-management programme. Dents "
+            "are not excluded from this report — they are screened for "
+            f"peak strain per ASME B31.8 §851.4.1 in {_annex_ref}."
+        )
+    else:
+        ph["LIMITATIONS_GEOMETRIC_NARRATIVE"] = (
+            "This report does not address geometrical defects (dents, "
+            "ovality), weld anomalies, third-party damage, or "
+            "environmental cracking. Those features fall under separate "
+            "engineering analyses and the operator's general "
+            "integrity-management programme."
         )
 
     # Conclusions narrative — auto-generated from the counts.

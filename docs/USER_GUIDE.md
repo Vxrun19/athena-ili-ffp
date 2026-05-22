@@ -1,4 +1,4 @@
-# Athena ILI FFP Tool — User Guide (v0.3.5)
+# Athena ILI FFP Tool — User Guide (v0.3.6)
 
 ## What this tool does
 

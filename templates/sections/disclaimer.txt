@@ -2,6 +2,6 @@ This report has been prepared by {{PREPARER}} for the exclusive use of {{CLIENT_
 
 The repair predictions assume continued operation of the pipeline under its current MAOP and the operator's current cathodic-protection programme. Material changes to operating conditions — particularly increases in operating pressure or interruptions in CP — invalidate the projection and warrant a re-assessment.
 
-This report does not address geometrical defects (dents, ovality), weld anomalies, third-party damage, or environmental cracking. Those features fall under separate engineering analyses and the operator's general integrity-management programme.
+{{LIMITATIONS_GEOMETRIC_NARRATIVE}}
 
 The consultancy disclaims liability for any consequence of operator action or inaction beyond the recommendations of this report.

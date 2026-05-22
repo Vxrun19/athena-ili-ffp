@@ -7,6 +7,23 @@ and the project loosely follows semantic versioning. Until v1.0 the
 project is treated as MINOR-versioned (0.2 → 0.3 is allowed to break
 on-disk YAML / annexure schemas; a PATCH bump like 0.2.0 → 0.2.1 will not).
 
+## [0.3.6] - 2026-05-22
+
+### Changed
+- Report polish (no engine math). Two report-layer reconciliations:
+  * The disclaimer's limitations paragraph no longer claims the report
+    "does not address geometrical defects (dents, ovality)…" when the
+    dent-strain annexure is present. It now uses the same conditional
+    reconciliation as the introduction's dent-scope line — when the
+    dent-strain annexure is included it states dents are screened for
+    peak strain per ASME B31.8 §851.4.1 in that annexure, and only
+    ovality / weld anomalies / third-party damage / environmental
+    cracking fall under separate analyses. Real projects without the
+    dent-strain annexure keep the original blanket wording.
+  * The FFP-analysis max-ERF sentence now populates the joint number
+    and chainage from the feature record (it previously emitted "—"
+    em-dash placeholders for both).
+
 ## [0.3.5] - 2026-05-22
 
 ### Fixed
