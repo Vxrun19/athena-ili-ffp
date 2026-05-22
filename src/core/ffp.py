@@ -92,6 +92,7 @@ _NON_ASSESSABLE_FIDS: frozenset[FeatureIdentification] = frozenset({
     FeatureIdentification.GIRTH_WELD_ANOMALY,
     FeatureIdentification.SPIRAL_WELD_ANOMALY,
     FeatureIdentification.LONG_WELD_ANOMALY,
+    FeatureIdentification.RIPPLE,
 })
 
 # Default B31G-Original / Kastner flow-stress factor.

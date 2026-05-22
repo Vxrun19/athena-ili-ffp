@@ -7,6 +7,20 @@ and the project loosely follows semantic versioning. Until v1.0 the
 project is treated as MINOR-versioned (0.2 → 0.3 is allowed to break
 on-disk YAML / annexure schemas; a PATCH bump like 0.2.0 → 0.2.1 will not).
 
+## [0.3.4] - 2026-05-22
+
+### Fixed
+- RIWR ripple features now classified as `RIPPLE` and excluded from the
+  B31G metal-loss FFP population (were leaking as `UNDEFINED`). Fixes
+  1YCP FFP population 10,200→10,193; reported separately from dents.
+  Validated against all prior customer pins (Mathura 29,844/323, BPCL
+  Malarna buckets, dent-strain row-4 all exact; Kandla #125 CGR
+  unchanged at 0.25244874274661505). Added bit-exact Kandla #125
+  regression test. Shared-engine fix — `FeatureIdentification.RIPPLE`
+  added to the enum, a `RIWR` synonym block to `column_synonyms.yaml`,
+  and `RIPPLE` to all three non-metal-loss skip lists (`models`,
+  `ili_reader`, `ffp`).
+
 ## [0.3.3] - 2026-05-19
 
 ### Fixed

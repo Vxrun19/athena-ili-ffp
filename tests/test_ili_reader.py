@@ -597,6 +597,138 @@ class TestDentFiltering:
 
 
 # ---------------------------------------------------------------------------
+# Ripple-leak regression (v0.3.4): RIWR / "Ripple/Wrinkle" features must be
+# classified as FeatureIdentification.RIPPLE and excluded from FFP, exactly
+# like dents.
+#
+# Real-world bug: the HPCL 1YCP listing's `Defects` sheet carries 7 RIWR
+# rows under POF Feature type "Anomaly". Pre-v0.3.4 the reader had no RIWR
+# mapping, so they resolved to UNDEFINED — which is NOT in the non-metal-
+# loss skip lists — and leaked into the B31G FFP population (10,200 instead
+# of 10,193). Ripples are a geometry deformation feature; B31G is not valid
+# for them. They must be reported separately, the same as dents.
+# ---------------------------------------------------------------------------
+
+class TestRippleFiltering:
+    """Confirm ripples never reach features_for_assessment()."""
+
+    @pytest.mark.parametrize("ripple_label", [
+        # POF identification strings real vendor files emit — all must
+        # normalise to RIPPLE via the v0.3.4 RIWR synonym block. (The
+        # bare lowercase "ripple" is intentionally excluded here: it
+        # matches a pre-existing `feature_type_anomaly.skip` entry and
+        # is dropped at read time via a different code path — covered
+        # separately by test_bare_ripple_string_still_excluded.)
+        "RIWR",
+        "Ripple/Wrinkle",
+        "ripple/wrinkle",
+        "Wrinkle",
+    ])
+    def test_ripple_labels_normalise_to_RIPPLE_enum(self, ripple_label, tmp_path):
+        """A synthetic NGP-style sheet: the reader must normalise every
+        ripple variant to FeatureIdentification.RIPPLE and filter all
+        such rows out of features_for_assessment()."""
+        import openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Defects"
+        ws.append([
+            "Anomaly ID", "Absolute Distance, m", "Joint Number",
+            "WT, mm", "Depth, %WT", "Length, mm", "Width, mm",
+            "Surface", "POF Acronym", "Description",
+        ])
+        ws.append([
+            "1", 100.0, 1, 7.1, 25.0, 50.0, 20.0,
+            "Internal", "CORR", "metal loss",
+        ])
+        ws.append([
+            "7001", 200.0, 2, 6.35, 0.5, 102.0, 105.0,
+            "Internal", ripple_label, "ripple",
+        ])
+        path = tmp_path / "ripple_test.xlsx"
+        wb.save(path)
+
+        run = ILIReader().read(str(path), run_id="run_test")
+
+        # Both rows present in the raw feature list.
+        assert len(run.features) >= 2, (
+            f"only {len(run.features)} features parsed — sheet detection "
+            "or column resolution failed"
+        )
+
+        f7001 = next((f for f in run.features if f.anomaly_id == "7001"), None)
+        assert f7001 is not None, "ripple feature 7001 missing from raw features"
+        assert f7001.feature_identification == FeatureIdentification.RIPPLE, (
+            f"vendor label {ripple_label!r} should normalise to RIPPLE, got "
+            f"{f7001.feature_identification!r}"
+        )
+
+        # And it must NOT be in features_for_assessment().
+        assess_ids = {f.anomaly_id for f in run.features_for_assessment()}
+        assert "7001" not in assess_ids, (
+            f"RIPPLE feature 7001 (vendor label {ripple_label!r}) leaked "
+            "into features_for_assessment() — the non-metal-loss filter is "
+            "missing the RIPPLE code path"
+        )
+        # The CORR row must still be assessed.
+        assert "1" in assess_ids, "the CORR control row was wrongly dropped"
+
+    def test_bare_ripple_string_still_excluded(self, tmp_path):
+        """A row whose POF identification is the bare lowercase "ripple"
+        matches the pre-existing `feature_type_anomaly.skip` list and is
+        dropped at read time. Different code path from the RIWR
+        classification fix, but the end result is the same contract:
+        the ripple never reaches features_for_assessment()."""
+        import openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Defects"
+        ws.append([
+            "Anomaly ID", "Absolute Distance, m", "Joint Number",
+            "WT, mm", "Depth, %WT", "Length, mm", "Width, mm",
+            "Surface", "POF Acronym", "Description",
+        ])
+        ws.append(["1", 100.0, 1, 7.1, 25.0, 50.0, 20.0,
+                   "Internal", "CORR", "metal loss"])
+        ws.append(["7001", 200.0, 2, 6.35, 0.5, 102.0, 105.0,
+                   "Internal", "ripple", "ripple"])
+        path = tmp_path / "bare_ripple.xlsx"
+        wb.save(path)
+        run = ILIReader().read(str(path), run_id="run_test")
+        assess_ids = {f.anomaly_id for f in run.features_for_assessment()}
+        assert "7001" not in assess_ids, (
+            "bare-'ripple' row leaked into features_for_assessment()"
+        )
+        assert "1" in assess_ids
+
+    def test_ripple_kept_in_raw_features(self, tmp_path):
+        """Ripples stay in run.features (raw count) so vendor 'Total rows'
+        cross-checks still reconcile — only features_for_assessment()
+        excludes them. Same contract as dents."""
+        import openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Defects"
+        ws.append([
+            "Anomaly ID", "Absolute Distance, m", "Joint Number",
+            "WT, mm", "Depth, %WT", "Length, mm", "Width, mm",
+            "Surface", "POF Acronym", "Description",
+        ])
+        ws.append(["1", 100.0, 1, 7.1, 25.0, 50.0, 20.0,
+                   "Internal", "CORR", "metal loss"])
+        ws.append(["7001", 200.0, 2, 6.35, 0.5, 102.0, 105.0,
+                   "Internal", "RIWR", "ripple"])
+        path = tmp_path / "ripple_raw.xlsx"
+        wb.save(path)
+        run = ILIReader().read(str(path), run_id="run_test")
+        assert len(run.features) == 2, (
+            f"raw run.features should keep the ripple row; got "
+            f"{len(run.features)}"
+        )
+        assert len(run.features_for_assessment()) == 1
+
+
+# ---------------------------------------------------------------------------
 # Integration test against the real Abu Road Run-2 (1ZYC) — skipped when
 # the file isn't checked into the repo.
 # ---------------------------------------------------------------------------
@@ -648,3 +780,111 @@ class TestAbuRoadDentLeak:
             "identification in config/column_synonyms.yaml for the "
             "actual vendor string used on row 1637."
         )
+
+
+# ---------------------------------------------------------------------------
+# Real-data regression against the HPCL 1YCP listing (v0.3.4 ripple fix).
+#
+# The 1YCP customer file lives at the project root (not examples/), the
+# same way other large vendor files are referenced. Skipped when absent so
+# CI / non-Athena machines stay green.
+# ---------------------------------------------------------------------------
+
+_1YCP_LISTING = Path(__file__).resolve().parents[1] / "1YCP Pipeline Listing.xlsx"
+
+
+@pytest.mark.skipif(
+    not _1YCP_LISTING.exists(),
+    reason=(
+        f"HPCL 1YCP listing not present at {_1YCP_LISTING.name}. Drop the "
+        "vendor file at the project root to exercise this test."
+    ),
+)
+class TestRipple1YCPRealData:
+    """Pins the v0.3.4 ripple fix against the real HPCL 1YCP deliverable.
+
+    The `Defects` sheet has 12,082 raw rows = 11,989 metal-loss
+    (CORR 11,202 + COCL 787) + 86 dents (DENP 61 + DENC 20 + DENK 5)
+    + 7 ripples (RIWR). 1,796 of the CORR rows are cluster-member
+    "grouped" rows, absorbed into their parent cluster. The B31G FFP
+    population is therefore 11,989 - 1,796 = 10,193.
+    """
+
+    @pytest.fixture(scope="class")
+    def run(self):
+        return ILIReader().read(str(_1YCP_LISTING), run_id="run_2")
+
+    def test_raw_features_count_12082(self, run):
+        """Nothing is dropped from the raw read — dents and ripples stay
+        in run.features so vendor 'Total rows' cross-checks reconcile."""
+        assert len(run.features) == 12082, (
+            f"raw run.features should be 12,082; got {len(run.features)}"
+        )
+
+    def test_ffp_population_is_10193(self, run):
+        """The B31G metal-loss FFP population: standalone metal-loss +
+        787 cluster parents, excluding the 1,796 'grouped' children and
+        all non-metal-loss (86 dents + 7 ripples)."""
+        assert len(run.features_for_assessment()) == 10193, (
+            f"features_for_assessment() should be 10,193; got "
+            f"{len(run.features_for_assessment())}"
+        )
+
+    def test_exactly_7_ripples_classified_as_RIPPLE(self, run):
+        ripples = [
+            f for f in run.features
+            if f.feature_identification is FeatureIdentification.RIPPLE
+        ]
+        assert len(ripples) == 7, (
+            f"expected exactly 7 RIWR features classified as RIPPLE; "
+            f"got {len(ripples)}"
+        )
+
+    def test_ripples_excluded_from_ffp_population(self, run):
+        """The whole point of the v0.3.4 fix — ripples must not reach
+        the B31G metal-loss FFP set."""
+        assess = run.features_for_assessment()
+        leaked = [
+            f for f in assess
+            if f.feature_identification is FeatureIdentification.RIPPLE
+        ]
+        assert not leaked, (
+            f"{len(leaked)} RIPPLE feature(s) leaked into "
+            "features_for_assessment() — pre-v0.3.4 bug has regressed"
+        )
+
+    def test_86_dents_classified_and_excluded(self, run):
+        """86 dents (DENP 61 + DENC 20 + DENK 5) all normalise to DENT
+        and are handled by the dent path — excluded from FFP, separate
+        from the 7 ripples."""
+        dents = [
+            f for f in run.features
+            if f.feature_identification is FeatureIdentification.DENT
+        ]
+        assert len(dents) == 86, (
+            f"expected 86 dents; got {len(dents)}"
+        )
+        assess = run.features_for_assessment()
+        dent_leaked = [
+            f for f in assess
+            if f.feature_identification is FeatureIdentification.DENT
+        ]
+        assert not dent_leaked, (
+            f"{len(dent_leaked)} DENT feature(s) leaked into FFP population"
+        )
+
+    def test_dents_and_ripples_are_disjoint(self, run):
+        """Dents and ripples are separate feature classes — reported
+        separately, never conflated."""
+        dents = {
+            f.anomaly_id for f in run.features
+            if f.feature_identification is FeatureIdentification.DENT
+        }
+        ripples = {
+            f.anomaly_id for f in run.features
+            if f.feature_identification is FeatureIdentification.RIPPLE
+        }
+        assert not (dents & ripples), (
+            f"overlap between dent and ripple ID sets: {dents & ripples}"
+        )
+        assert len(dents) == 86 and len(ripples) == 7

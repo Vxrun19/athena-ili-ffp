@@ -61,6 +61,7 @@ class FeatureIdentification(str, Enum):
     GIRTH_WELD_ANOMALY = "GWAN"
     SPIRAL_WELD_ANOMALY = "SWAN"
     LONG_WELD_ANOMALY = "LWAN"
+    RIPPLE = "RIWR"                              # ripple / wrinkle (geometry deformation)
     UNDEFINED = "UNDEFINED"
 
 
@@ -413,6 +414,7 @@ class ILIRun:
             FeatureIdentification.GIRTH_WELD_ANOMALY,
             FeatureIdentification.SPIRAL_WELD_ANOMALY,
             FeatureIdentification.LONG_WELD_ANOMALY,
+            FeatureIdentification.RIPPLE,
         }
         return [
             f for f in self.features

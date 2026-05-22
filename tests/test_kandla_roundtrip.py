@@ -182,3 +182,86 @@ def test_kandla_run1_roundtrip_preserves_published_cgr(tmp_path: Path):
         f"Feature #125 CGR drift after round-trip: "
         f"got {target.cgr_mm_yr:.4f}, expected {EXPECTED:.4f} mm/yr"
     )
+
+
+# ---------------------------------------------------------------------------
+# Bit-exact gold-standard pin for Kandla feature #125 CGR.
+# ---------------------------------------------------------------------------
+
+# The NGP-format Kandla Run-1 — the file kandla_project.yaml points at.
+KANDLA_RUN1_NGP = (
+    PROJECT_ROOT / "examples"
+    / "10_inch_Kandla_to_Samakhiali__58_2_km_FR_Pipe_Tally_Rev_0_NGP.xlsx"
+)
+
+# The bit-exact gold-standard CGR for Kandla feature #125 (mm/yr).
+#
+# Captured from the committed v0.3.3 engine and re-confirmed bit-identical
+# on v0.3.4 (the RIWR ripple fix is provably inert for Kandla — the Kandla
+# files contain zero ripple features, so features_for_assessment() returns
+# a byte-identical list and the CGR path is unchanged).
+#
+# This pin exists because the round-trip test above only asserts
+# approx(0.2522, abs=1e-3) — far too loose to catch a sub-milli drift.
+# During the v0.3.4 validation a 1-ULP error in a hand-supplied reference
+# value went unnoticed precisely because no tight pin guarded this number.
+#
+# Comparison is bit-exact `==` ON PURPOSE: the value has proven stable
+# across two independent engine states, and the four-pin validation
+# culture treats #125 as a bit-exact pin. Any non-zero delta — down to a
+# single ULP — fails this test. If a future platform legitimately
+# produces a 1-ULP-different float here (e.g. a numpy build change in the
+# population-P95 path), switch to pytest.approx(..., abs=1e-15) — which
+# still catches any real drift at the 1e-12 level — and note why.
+KANDLA_125_CGR_BIT_EXACT = 0.25244874274661505
+
+
+@pytest.mark.skipif(
+    not (KANDLA_RUN1_NGP.exists() and KANDLA_RUN2.exists()),
+    reason="Kandla example files not present (CI without binaries).",
+)
+def test_kandla_125_cgr_bit_exact_pin():
+    """Bit-exact regression pin for Kandla feature #125 CGR.
+
+    Direct engine path (NO format-converter round-trip): load the
+    canonical kandla_project.yaml, read both runs as-is, align, match,
+    compute CGR. Feature #125's cgr_mm_yr must equal
+    KANDLA_125_CGR_BIT_EXACT to the bit.
+    """
+    from src.core.cgr import CGRCalculator
+    from src.core.defect_matcher import DefectMatcher
+    from src.core.joint_alignment import JointAligner
+    from src.io.ili_reader import ILIReader
+    from src.models import Project
+
+    project = Project.from_yaml(
+        str(PROJECT_ROOT / "examples" / "kandla_project.yaml")
+    )
+    reader = ILIReader()
+
+    run1 = reader.read(str(KANDLA_RUN1_NGP), run_id="run_1")
+    run1.inspection_date = project.run_1.inspection_date
+    run2 = reader.read(str(KANDLA_RUN2), run_id="run_2")
+    run2.inspection_date = project.run_2.inspection_date
+
+    years_between = (run2.inspection_date - run1.inspection_date).days / 365.25
+    ja = JointAligner().align(run1, run2)
+    mr = DefectMatcher().match(run1, run2, ja.matches)
+    cgr_mode = (project.config.get("cgr") or {}).get("mode", "hybrid")
+    cgrs = CGRCalculator({"mode": cgr_mode}).compute(
+        mr, years_between=years_between,
+    )
+
+    target = next(
+        (c for c in cgrs if str(c.feature.anomaly_id) == "125"), None,
+    )
+    assert target is not None, (
+        "feature #125 not found in Kandla CGR results"
+    )
+    assert target.cgr_mm_yr == KANDLA_125_CGR_BIT_EXACT, (
+        f"Kandla #125 CGR drifted from the bit-exact gold-standard pin: "
+        f"got {target.cgr_mm_yr!r}, expected {KANDLA_125_CGR_BIT_EXACT!r} "
+        f"(delta = {target.cgr_mm_yr - KANDLA_125_CGR_BIT_EXACT:.3e}). "
+        f"Any non-zero delta is a real engine change — investigate the "
+        f"cause before updating this pin."
+    )

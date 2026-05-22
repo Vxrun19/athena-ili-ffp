@@ -407,6 +407,22 @@ value_normalisations:
     LWAN:
       - "lwan"
       - "longitudinal weld anomaly"
+    RIWR:
+      # Ripple / wrinkle — a geometry deformation feature, NOT metal
+      # loss. Like dents, ripples are out of scope for B31G/RSTRENG;
+      # the reader drops them via _NON_METAL_LOSS_FIDS at the end of
+      # the per-row parse so they stay in `run.features` (raw count)
+      # but are excluded from features_for_assessment(). Surfaced on
+      # the HPCL 1YCP listing, whose `Defects` sheet carries 7 RIWR
+      # rows under POF Feature type "Anomaly" — without this mapping
+      # they resolved to UNDEFINED and leaked into the FFP population.
+      - "riwr"
+      - "ripple/wrinkle"
+      - "ripple / wrinkle"
+      - "ripple/ wrinkle"
+      - "ripple /wrinkle"
+      - "ripple"
+      - "wrinkle"
 
   dimension_class:
     # Map free-text dimension class to canonical POF codes.

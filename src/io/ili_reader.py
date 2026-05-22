@@ -67,6 +67,7 @@ _NON_METAL_LOSS_FIDS: frozenset[FeatureIdentification] = frozenset(
         FeatureIdentification.DENT,
         FeatureIdentification.DENT_WITH_METAL_LOSS,
         FeatureIdentification.CRACK,
+        FeatureIdentification.RIPPLE,
     }
 )
 
