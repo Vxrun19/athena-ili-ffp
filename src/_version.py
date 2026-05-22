@@ -16,7 +16,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-__version__ = "0.3.6"
+__version__ = "0.3.7"
 __build_date__ = "auto"
 
 

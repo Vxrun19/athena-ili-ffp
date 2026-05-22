@@ -12,6 +12,7 @@ that the main window forwards to the Run Analysis screen.
 """
 from __future__ import annotations
 
+import copy
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -164,6 +165,42 @@ def _build_maop_zones(
 # calculations don't drift from Psafe / ERF math by rounding.
 _MPA_PER_KGCM2 = 0.0980665           # 1 kg/cm² in MPa
 _KGCM2_PER_MPA = 1.0 / _MPA_PER_KGCM2  # ≈ 10.1972
+
+
+def merge_preserving_unknown(form: dict, raw: dict) -> dict:
+    """Merge a form-harvested config dict over a raw loaded config.
+
+    The Project Setup form rebuilds the project YAML from scratch on
+    every save (``_build_config_dict``). Any key the form has no widget
+    for — e.g. ``cgr.unmatched_depth_assumption_pct_wt``, or a future
+    ``qa:`` block — would otherwise be silently dropped on a
+    load → save round-trip. That silent mutation caused a real
+    customer-deliverable error (a configured 0 % CGR commissioning
+    baseline reverted to the 10 % default).
+
+    This merge fixes that: ``form`` values win wherever the form
+    manages a key, but keys present ONLY in ``raw`` are preserved.
+
+    Semantics:
+      * Nested dicts are merged recursively (so ``cgr.mode`` from the
+        form coexists with ``cgr.unmatched_depth_assumption_pct_wt``
+        from raw).
+      * Lists and scalars in ``form`` REPLACE the raw value wholesale —
+        the form fully owns list-valued keys like ``maop_zones`` and
+        ``report.annexures``; element-wise list merging would corrupt
+        deliberate user edits.
+      * Keys in ``raw`` but absent from ``form`` are carried through.
+
+    Returns a new dict; neither input is mutated.
+    """
+    out: dict = copy.deepcopy(raw) if isinstance(raw, dict) else {}
+    for key, form_val in (form or {}).items():
+        raw_val = out.get(key)
+        if isinstance(form_val, dict) and isinstance(raw_val, dict):
+            out[key] = merge_preserving_unknown(form_val, raw_val)
+        else:
+            out[key] = copy.deepcopy(form_val)
+    return out
 
 
 def _max_design_maop_kgcm2(
@@ -1286,6 +1323,8 @@ class ProjectSetupScreen(QWidget):
     def _on_new_clicked(self) -> None:
         self._populate_from_dict({})
         self._current_config_path = None
+        # Fresh project — no prior YAML, so nothing to preserve.
+        self._loaded_raw_config = {}
         self.lbl_loaded.setText("New project (unsaved)")
         self.lbl_status.setText("Blank project — fill in fields and validate.")
         self.lbl_status.setStyleSheet(f"color: {theme.COLOR_TEXT_MUTED};")
@@ -1305,6 +1344,11 @@ class ProjectSetupScreen(QWidget):
         except Exception as e:                                   # noqa: BLE001
             QMessageBox.critical(self, "Load failed", f"Could not parse YAML:\n{e}")
             return
+        # Stash the full raw config so a load → save round-trip
+        # preserves keys the form has no widget for (e.g.
+        # cgr.unmatched_depth_assumption_pct_wt). See
+        # merge_preserving_unknown(), applied in _build_config_dict().
+        self._loaded_raw_config = copy.deepcopy(data)
         self._populate_from_dict(data)
         self._current_config_path = Path(path)
         self.lbl_loaded.setText(f"Loaded: {Path(path).name}")
@@ -1497,7 +1541,7 @@ class ProjectSetupScreen(QWidget):
         run2_text = self.ed_run2_path.text().strip()
         run1_out = self._path_for_yaml(run1_text, yaml_save_path)
         run2_out = self._path_for_yaml(run2_text, yaml_save_path)
-        return {
+        form_dict: dict[str, Any] = {
             "project": {
                 "project_name": self.ed_project_name.text().strip(),
                 "pipeline_name": self.ed_pipeline_name.text().strip(),
@@ -1536,6 +1580,13 @@ class ProjectSetupScreen(QWidget):
                 self.panel_annexure_topics.selection()
             ),
         }
+        # Preserve any keys the form has no widget for (e.g.
+        # cgr.unmatched_depth_assumption_pct_wt) by merging the
+        # form-harvested dict over the raw config stashed at load time.
+        # Form values win where the form manages a key; raw-only keys
+        # survive. For a fresh project the stash is {} → no-op.
+        raw = getattr(self, "_loaded_raw_config", None) or {}
+        return merge_preserving_unknown(form_dict, raw)
 
     def _build_pipeline_dict(self) -> dict[str, Any]:
         """Render the pipeline block, including maop_zoning_mode when

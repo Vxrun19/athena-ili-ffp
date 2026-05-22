@@ -7,6 +7,23 @@ and the project loosely follows semantic versioning. Until v1.0 the
 project is treated as MINOR-versioned (0.2 → 0.3 is allowed to break
 on-disk YAML / annexure schemas; a PATCH bump like 0.2.0 → 0.2.1 will not).
 
+## [0.3.7] - 2026-05-22
+
+### Fixed
+- GUI project-setup now preserves unknown / unedited YAML keys through
+  a load → save round-trip. The Project Setup form rebuilds the project
+  YAML from scratch out of its widgets on save, so any key without a
+  widget — notably `cgr.unmatched_depth_assumption_pct_wt`, and any
+  future YAML-only block — was silently dropped. That silent mutation
+  caused a real customer-deliverable error: a configured 0 % CGR
+  commissioning baseline reverted to the 10 % default on a GUI
+  round-trip. The new `merge_preserving_unknown` helper merges the
+  form-harvested dict over the raw config stashed at load time — form
+  values win where the form manages a key, keys present only in the
+  raw config survive, nested dicts merge recursively, and list-valued
+  keys (`maop_zones`, `report.annexures`) remain form-owned. Loading a
+  config in the GUI no longer mutates it.
+
 ## [0.3.6] - 2026-05-22
 
 ### Changed

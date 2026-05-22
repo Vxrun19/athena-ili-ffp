@@ -165,3 +165,86 @@ class TestGuiPipeRegistryRoundTrip:
             f"This is the Prompt 18 bug — the pipe-tally sheet isn't "
             f"being included in the GUI export."
         )
+
+
+# ---------------------------------------------------------------------------
+# v0.3.x — GUI project-save must preserve YAML keys it has no widget for.
+#
+# Root cause of a real customer-deliverable error: the Project Setup form
+# rebuilds the project YAML from scratch on save, so any key without a
+# form widget — notably `cgr.unmatched_depth_assumption_pct_wt` — was
+# silently dropped on a load -> save round-trip, reverting a configured
+# 0 % CGR commissioning baseline to the 10 % default. The
+# `merge_preserving_unknown` helper merges the form-harvested dict over
+# the raw loaded config so unmanaged keys survive.
+# ---------------------------------------------------------------------------
+
+class TestProjectYamlPreservesUnknownKeys:
+    """Unit tests for project_setup.merge_preserving_unknown."""
+
+    @staticmethod
+    def _merge():
+        from src.gui.screens.project_setup import merge_preserving_unknown
+        return merge_preserving_unknown
+
+    def test_unmatched_baseline_key_survives_round_trip(self):
+        """The exact bug: form rebuilds cgr as {mode}; the raw config's
+        cgr.unmatched_depth_assumption_pct_wt must NOT be dropped."""
+        merge = self._merge()
+        raw = {
+            "cgr": {"mode": "feature_specific",
+                    "unmatched_depth_assumption_pct_wt": 0.0},
+        }
+        form = {"cgr": {"mode": "feature_specific"}}  # form has no widget for the 0.0 key
+        out = merge(form, raw)
+        assert out["cgr"]["unmatched_depth_assumption_pct_wt"] == 0.0
+        assert out["cgr"]["mode"] == "feature_specific"
+
+    def test_form_value_wins_on_shared_key(self):
+        merge = self._merge()
+        raw = {"cgr": {"mode": "hybrid",
+                       "unmatched_depth_assumption_pct_wt": 0.0}}
+        form = {"cgr": {"mode": "feature_specific"}}
+        out = merge(form, raw)
+        # Form's mode wins; the raw-only key still survives.
+        assert out["cgr"]["mode"] == "feature_specific"
+        assert out["cgr"]["unmatched_depth_assumption_pct_wt"] == 0.0
+
+    def test_raw_only_top_level_block_preserved(self):
+        """A whole block the form never manages (e.g. a future qa:)
+        is carried through untouched."""
+        merge = self._merge()
+        raw = {"qa": {"coordinate_bounds": {"lat": [6, 38]}}}
+        form = {"ffp": {"primary_method": "B31G_Original"}}
+        out = merge(form, raw)
+        assert out["qa"] == {"coordinate_bounds": {"lat": [6, 38]}}
+        assert out["ffp"]["primary_method"] == "B31G_Original"
+
+    def test_form_list_replaces_raw_list(self):
+        """List-valued keys (maop_zones) are form-owned — the form's
+        list replaces the raw list wholesale, no element merging."""
+        merge = self._merge()
+        raw = {"maop_zones": [{"wt_mm_min": 0.0, "wt_mm_max": 20.0,
+                               "maop_kgcm2": 70.0}]}
+        form = {"maop_zones": [
+            {"wt_mm_min": 0.0, "wt_mm_max": 20.0, "maop_kgcm2": 98.3},
+        ]}
+        out = merge(form, raw)
+        assert out["maop_zones"] == form["maop_zones"]
+
+    def test_empty_raw_returns_form_unchanged(self):
+        """Fresh project (no loaded YAML) -> merge is a no-op."""
+        merge = self._merge()
+        form = {"cgr": {"mode": "hybrid"}, "ffp": {"primary_method": "X"}}
+        assert merge(form, {}) == form
+
+    def test_inputs_not_mutated(self):
+        merge = self._merge()
+        raw = {"cgr": {"mode": "hybrid",
+                       "unmatched_depth_assumption_pct_wt": 0.0}}
+        form = {"cgr": {"mode": "feature_specific"}}
+        raw_before = {"cgr": dict(raw["cgr"])}
+        form_before = {"cgr": dict(form["cgr"])}
+        merge(form, raw)
+        assert raw == raw_before, "raw config was mutated"
+        assert form == form_before, "form config was mutated"
