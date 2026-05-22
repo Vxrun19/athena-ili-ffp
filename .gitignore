@@ -57,3 +57,13 @@ FFP_*_annexure.xlsx
 *.msix
 ~*
 `
+
+
+# Customer deliverables & data (defense in depth)
+*_output/
+*_BUILD_SPEC.md
+*_reconciliation_note.md
+hpcl_*.yaml
+1YCP*
+18*Line*details*
+*.pdf
