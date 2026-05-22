@@ -305,3 +305,89 @@ class TestEdgeCases:
         h1 = {p.text for p in doc.paragraphs if p.style.name == "Heading 1"}
         assert "1. Introduction" in h1
         assert "Disclaimer" in h1
+
+
+# ---------------------------------------------------------------------------
+# v0.3.4 — narrative adapts to a synthetic (empty) Run-1.
+# ---------------------------------------------------------------------------
+
+class TestNarrativeConditional:
+    """The CGR / introduction narrative must not describe a run-to-run
+    comparison when Run-1 is a synthetic commissioning baseline (empty
+    file, no prior ILI). Real two-run projects keep the original prose.
+    """
+
+    @staticmethod
+    def _placeholders(*, run1_empty, cgr_cfg, with_dent_annexure):
+        from src.models import ILIRun, Feature, FeatureIdentification, Surface
+        from src.reports.main_report_writer import _build_placeholders
+
+        def _feat(aid):
+            return Feature(
+                anomaly_id=aid, source_run="r", abs_distance_m=10.0,
+                joint_number=1, wt_mm=8.0, depth_pct_wt=20.0,
+                length_mm=30.0, width_mm=20.0, surface=Surface.EXTERNAL,
+                feature_identification=FeatureIdentification.CORROSION,
+            )
+
+        run1 = ILIRun(run_id="run_1", inspection_date=date(2019, 12, 1))
+        if not run1_empty:
+            run1.features.append(_feat("r1-1"))
+        run2 = ILIRun(run_id="run_2", inspection_date=date(2026, 2, 23))
+        run2.features.append(_feat("r2-1"))
+        pipeline = Pipeline(
+            pipeline_name="Test Line", diameter_mm=457.2,
+            length_km=100.0, smys_mpa=448.0,
+        )
+        annexures = [("dent_strain_b318", "E")] if with_dent_annexure else []
+        project = Project(
+            project_name="t", pipeline=pipeline,
+            run_1=run1, run_2=run2,
+            config={"cgr": cgr_cfg},
+            report_annexures=annexures,
+        )
+        return _build_placeholders(
+            project=project, match_result=None, joint_alignment=None,
+            cgr_results=[], ffp_results=[], repair_predictions=[],
+            flag_report=None,
+        )
+
+    def test_synthetic_run1_no_prior_ili_narrative(self):
+        ph = self._placeholders(
+            run1_empty=True,
+            cgr_cfg={"mode": "feature_specific",
+                     "unmatched_depth_assumption_pct_wt": 0.0},
+            with_dent_annexure=True,
+        )
+        assert "No prior ILI" in ph["INTRO_INSPECTION_NARRATIVE"]
+        assert "Needleman" not in ph["CGR_ALIGNMENT_NARRATIVE"]
+        assert "commissioning" in ph["CGR_ALIGNMENT_NARRATIVE"].lower()
+        assert "0 % WT" in ph["CGR_DETERMINATION_NARRATIVE"]
+        assert ph["POD_PCT"] == "0"
+
+    def test_real_run1_keeps_run_to_run_narrative(self):
+        ph = self._placeholders(
+            run1_empty=False,
+            cgr_cfg={"mode": "hybrid"},
+            with_dent_annexure=False,
+        )
+        assert "Two in-line inspections" in ph["INTRO_INSPECTION_NARRATIVE"]
+        assert "Needleman-Wunsch" in ph["CGR_ALIGNMENT_NARRATIVE"]
+        assert "Hungarian" in ph["CGR_ALIGNMENT_NARRATIVE"]
+        assert "Matched defects" in ph["CGR_DETERMINATION_NARRATIVE"]
+        assert ph["POD_PCT"] == "10"
+
+    def test_dent_annexure_reconciles_scope_wording(self):
+        with_dent = self._placeholders(
+            run1_empty=True,
+            cgr_cfg={"mode": "feature_specific"},
+            with_dent_annexure=True,
+        )
+        assert "dent-strain annexure" in with_dent["SCOPE_EXCLUSIONS_NARRATIVE"]
+        without = self._placeholders(
+            run1_empty=False,
+            cgr_cfg={"mode": "hybrid"},
+            with_dent_annexure=False,
+        )
+        assert ("separate engineering reports"
+                in without["SCOPE_EXCLUSIONS_NARRATIVE"])

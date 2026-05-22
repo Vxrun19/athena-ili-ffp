@@ -273,3 +273,88 @@ class TestFromFeatureAdapter:
         assert r.E1 == pytest.approx(0.020365, abs=1e-5)
         assert r.E2 == pytest.approx(0.002729, abs=1e-5)
         assert r.E3 == pytest.approx(0.000128, abs=1e-5)
+
+
+# ---------------------------------------------------------------------------
+# Real-data regression — HPCL 1YCP dent #15 (v0.3.4 dent %OD-depth fix).
+#
+# Pre-v0.3.4 bug: the reader's parse_depth applied its metal-loss
+# fraction rule to dent %OD values — 1YCP dent #15's raw depth 0.53
+# (%OD) became 53, and the dent-strain %OD->mm conversion then produced
+# depth_mm = 53 * 457.2 / 100 = 242.3 mm (vs the correct 2.42 mm),
+# inflating the resultant strain ~100x into the physically-absurd
+# 45-480 % range. v0.3.4 disables the fraction rule for dent rows.
+#
+# The 1YCP file lives at the project root; skipped when absent.
+# ---------------------------------------------------------------------------
+
+from pathlib import Path as _Path
+
+_1YCP_LISTING = (
+    _Path(__file__).resolve().parents[2] / "1YCP_Pipeline_Listing.xlsx"
+)
+
+
+@pytest.mark.skipif(
+    not _1YCP_LISTING.exists(),
+    reason=f"HPCL 1YCP listing not present at {_1YCP_LISTING.name}.",
+)
+class TestRealData1YCPDentDepth:
+    """Pins 1YCP dent depth + strain to physically sane values via the
+    full reader -> adapter path that carried the v0.3.4 bug."""
+
+    @pytest.fixture(scope="class")
+    def dents(self):
+        from src.io.feature_reader import read_dent_features
+        return read_dent_features(str(_1YCP_LISTING))
+
+    @pytest.fixture(scope="class")
+    def strains(self, dents):
+        from src.core.dent_strain import compute_dent_strain_from_feature
+        from src.models import Pipeline
+        # 1YCP pipeline: 18" OD 457.2 mm.
+        pipe = Pipeline(diameter_mm=457.2, smys_mpa=448.0, length_km=118.362)
+        return {
+            str(f.anomaly_id): compute_dent_strain_from_feature(f, pipe)
+            for f in dents
+        }
+
+    def test_86_dents_read(self, dents):
+        assert len(dents) == 86
+
+    def test_dent_15_depth_pct_is_literal_od(self, dents):
+        """Reader must keep dent #15's raw 0.53 %OD as 0.53 — NOT 53."""
+        d15 = next((f for f in dents if str(f.anomaly_id) == "15"), None)
+        assert d15 is not None, "dent #15 not found"
+        assert d15.depth_pct_wt == pytest.approx(0.53, abs=1e-9), (
+            f"dent #15 depth_pct should stay 0.53 %OD; got "
+            f"{d15.depth_pct_wt} (the 53.0 value is the pre-v0.3.4 bug)"
+        )
+
+    def test_dent_15_depth_mm_physically_sane(self, strains):
+        """0.53 %OD on a 457.2 mm pipe -> 2.4232 mm, NOT 242.3 mm."""
+        r = strains["15"]
+        assert r.depth_mm == pytest.approx(2.4232, abs=1e-3), (
+            f"dent #15 depth_mm should be ~2.42 mm; got {r.depth_mm:.3f}"
+        )
+
+    def test_dent_15_resultant_strain_a_few_percent(self, strains):
+        """Resultant strain must be a few %, not the ~234 % the 100x
+        depth bug produced."""
+        r = strains["15"]
+        assert 1.0 < r.resultant_strain_pct < 5.0, (
+            f"dent #15 resultant strain {r.resultant_strain_pct:.2f}% "
+            f"outside the physically-sane band"
+        )
+
+    def test_all_86_dents_physically_sane(self, strains):
+        """Every dent's resultant strain must land in a physically
+        plausible band — pre-v0.3.4 they were 45-480 %."""
+        for fid, r in strains.items():
+            assert 0.0 <= r.resultant_strain_pct < 10.0, (
+                f"dent #{fid} resultant strain {r.resultant_strain_pct:.1f}% "
+                f"is non-physical — the %OD depth bug has regressed"
+            )
+            assert r.depth_mm < 25.0, (
+                f"dent #{fid} depth_mm {r.depth_mm:.1f} mm is non-physical"
+            )

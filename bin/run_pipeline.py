@@ -214,10 +214,19 @@ def run(args: argparse.Namespace) -> int:
         f"{len(mr.unmatched_features_old)}/{len(mr.unmatched_features_new)} unmatched")
 
     # ----- CGR
-    cgr_mode = (project.config.get("cgr") or {}).get("mode", "hybrid")
-    log(f"CGR ({cgr_mode})...")
+    # Pass the FULL `cgr` YAML block (not just `mode`) so project-level
+    # overrides such as `unmatched_depth_assumption_pct_wt` take effect.
+    # The synthetic-commissioning case (empty Run-1) sets that to 0.0 so
+    # an unmatched feature's full present-day depth counts as growth;
+    # without forwarding the block the CGRCalculator default of 10 % WT
+    # would silently apply. CGRCalculator merges this over its own
+    # DEFAULT_CONFIG, so YAMLs that only set `mode` behave exactly as
+    # before.
+    cgr_cfg = dict(project.config.get("cgr") or {})
+    cgr_cfg.setdefault("mode", "hybrid")
+    log(f"CGR ({cgr_cfg.get('mode')})...")
     t0 = time.time()
-    cgrs = CGRCalculator({"mode": cgr_mode}).compute(mr, years_between=years_between)
+    cgrs = CGRCalculator(cgr_cfg).compute(mr, years_between=years_between)
     log(f"  cgr: {time.time() - t0:.1f}s — {len(cgrs)} results")
 
     # ----- FFP

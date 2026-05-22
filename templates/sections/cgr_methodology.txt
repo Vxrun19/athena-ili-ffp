@@ -1,17 +1,14 @@
 ## 4.1 ILI Reports Assessment
 
-The two inspection datasets ({{RUN1_YEAR}} and {{RUN2_YEAR}}) were aligned at the joint level using Needleman-Wunsch sequence alignment on joint length signatures, anchored by absolute chainage. The alignment produced {{JOINT_MATCH_COUNT}} matched joint pairs out of a possible {{TOTAL_JOINTS_RUN2}} joints in the {{RUN2_YEAR}} run, a match rate of {{JOINT_MATCH_RATE_PCT}}% with {{MONOTONICITY_VIOLATIONS}} chainage reversals (zero violations indicates the alignment preserves run-order consistency).
-
-Within each matched joint pair, individual metal-loss features were matched between runs using Hungarian assignment on a cost matrix combining axial position, clock orientation, surface side, and depth-shrinkage plausibility. The defect-matching pipeline identified {{DEFECT_MATCH_COUNT}} cross-run pairs out of {{RUN1_FEATURE_COUNT}} {{RUN1_YEAR}} features and {{RUN2_FEATURE_COUNT}} {{RUN2_YEAR}} features.
+{{CGR_ALIGNMENT_NARRATIVE}}
 
 ## 4.2 Repair Prediction Methodology
 
 Corrosion growth rates are determined as follows:
 
-  * **Matched defects**: CGR = max(0, (depth_run2 − depth_run1) / years_between). Negative growth is clamped to zero (corrosion does not physically shrink; apparent reduction is attributed to tool measurement variability).
-  * **Unmatched run-2 defects**: features reported only in the later run are assumed to have been below the {{POD_PCT}}% WT probability-of-detection threshold at the earlier run. The CGR is then computed assuming depth_old = {{POD_PCT}}% × WT, which is the most conservative non-zero growth rate consistent with the tool's detection limit.
+{{CGR_DETERMINATION_NARRATIVE}}
 
-To capture the population-level upper bound on growth, the 95th percentile (P95) of the feature-specific CGRs is computed separately for internal and external defects. In **{{CGR_MODE}}** mode, every defect's used growth rate is `max(feature_cgr, surface_P95)` — features that happen to grow slowly are not allowed to escape the population-level expectation.
+{{CGR_P95_NARRATIVE}}
 
 The repair-year prediction simulates each defect's depth forward year by year, recomputing Psafe/ERF at each step. Two stop conditions are checked, whichever fires first:
 

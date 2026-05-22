@@ -202,7 +202,12 @@ def parse_surface(value: Any) -> Surface:
 # Depth parsing
 # ---------------------------------------------------------------------------
 
-def parse_depth(value: Any, wt_mm: float | None) -> tuple[float | None, float | None]:
+def parse_depth(
+    value: Any,
+    wt_mm: float | None,
+    *,
+    allow_fraction: bool = True,
+) -> tuple[float | None, float | None]:
     """Parse a vendor depth value into (depth_pct_wt, depth_mm).
 
     Accepts:
@@ -215,6 +220,17 @@ def parse_depth(value: Any, wt_mm: float | None) -> tuple[float | None, float | 
         1.0                 -> ambiguous: treated as 1.0% (bare-number convention)
 
     depth_mm is only returned when wt_mm is a positive number; otherwise it is None.
+
+    ``allow_fraction`` (default True) controls the bare-numeric-in-(0,1)
+    rule. With the default, a bare ``0.285`` is read as the fraction
+    28.5 % — the right call for metal-loss %WT, where a sub-1 value is
+    conventionally a fraction. Pass ``allow_fraction=False`` for DENT
+    rows, whose depth is %OD: a dent depth of ``0.53`` genuinely means
+    0.53 %OD (a ~2 mm dent on a 457 mm pipe), NOT 53 %. Without this the
+    fraction rule inflates dent depth 100×, and the downstream
+    %OD→mm conversion then produces a ~240 mm "depth" and ~10,000×-too-
+    high strains. A ``"%"``-marked string is always literal regardless
+    of this flag.
     """
     if value is None:
         return (None, None)
@@ -244,8 +260,10 @@ def parse_depth(value: Any, wt_mm: float | None) -> tuple[float | None, float | 
 
     if is_percent_marked:
         pct = num
-    elif 0.0 < num < 1.0:
+    elif allow_fraction and 0.0 < num < 1.0:
         # Bare fraction in (0, 1) -> interpret as fraction of WT.
+        # Suppressed for dent rows (allow_fraction=False), where a
+        # sub-1 value is a literal small %OD, not a fraction.
         pct = num * 100.0
     else:
         pct = num

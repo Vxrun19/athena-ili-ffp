@@ -790,7 +790,18 @@ class TestAbuRoadDentLeak:
 # CI / non-Athena machines stay green.
 # ---------------------------------------------------------------------------
 
-_1YCP_LISTING = Path(__file__).resolve().parents[1] / "1YCP Pipeline Listing.xlsx"
+# The 1YCP listing has shipped under both a spaced and an underscored
+# filename; accept whichever is present so the regression stays active.
+_1YCP_LISTING = next(
+    (
+        _p for _p in (
+            Path(__file__).resolve().parents[1] / "1YCP_Pipeline_Listing.xlsx",
+            Path(__file__).resolve().parents[1] / "1YCP Pipeline Listing.xlsx",
+        )
+        if _p.exists()
+    ),
+    Path(__file__).resolve().parents[1] / "1YCP_Pipeline_Listing.xlsx",
+)
 
 
 @pytest.mark.skipif(

@@ -957,28 +957,10 @@ class ILIReader:
         uw_override: float | None = None,
     ) -> Feature:
         wt = _to_float(_get(row, col_map, "wt_mm"))
-        # Depth column convention note: NGP/Athena tally files use a
-        # single "Depth, %WT/OD" header — the value is interpreted as
-        # %WT for metal-loss rows but as %OD for dents (a dent at 0.9
-        # means 0.9% OD, not 90% WT). We don't fork the conversion
-        # here because dents are filtered out below via
-        # _NON_METAL_LOSS_FIDS BEFORE they reach the FFP engine. If a
-        # future maintainer ever adds dent-aware analysis, this is the
-        # spot to branch on feature_identification and convert via the
-        # OD/WT ratio. Until then the "treat all values as %WT"
-        # assumption is safe — but only for the rows that survive the
-        # non-ML drop. The 1ZYC Abu Road bug (#125-equivalent for
-        # dents) traces back to a dent string that slipped past
-        # normalization and was assessed with %OD numbers treated as
-        # %WT, producing ERF ≈ 8.57. Bottom line: keep the dent filter
-        # tight.
-        depth_raw = _get(row, col_map, "depth_pct_wt")
-        depth_pct, _depth_mm = parse_depth(depth_raw, wt)
-
-        clock = parse_clock(_get(row, col_map, "clock_position"))
-        surface = parse_surface(_get(row, col_map, "surface"))
 
         # Map vendor free-text to canonical POF codes via value_normalisations.
+        # Computed BEFORE depth so the depth parser can branch on dent vs
+        # metal-loss — see the depth-column note immediately below.
         fid_raw = _get(row, col_map, "feature_identification")
         fid_code = (
             _normalise_value("feature_identification", fid_raw, self._vn_idx)
@@ -989,6 +971,32 @@ class ILIReader:
             fid_enum = FeatureIdentification(fid_code) if fid_code else FeatureIdentification.UNDEFINED
         except ValueError:
             fid_enum = FeatureIdentification.UNDEFINED
+
+        # Depth column convention: NGP/Athena tally files use a single
+        # "Depth, %WT/OD" header — the value is %WT for metal-loss rows
+        # but %OD for dents (a dent at 0.53 means 0.53 %OD, NOT 53 %WT).
+        # parse_depth's bare-fraction rule (a value in (0,1) read as a
+        # fraction and ×100'd) is correct for metal-loss %WT but WRONG
+        # for dent %OD — it would inflate a 0.53 %OD dent to 53, which
+        # the dent-strain %OD→mm conversion then turns into a ~240 mm
+        # "depth" and ~10,000×-too-high strains. So we disable the
+        # fraction rule for dent rows (allow_fraction=False); the
+        # dent-strain adapter applies the %OD→mm conversion downstream.
+        # Metal-loss rows are unaffected. (Dents are still dropped from
+        # the FFP set via _NON_METAL_LOSS_FIDS — the 1ZYC Abu Road
+        # dent-leak guard — this only fixes the depth they carry into
+        # the separate dent-strain annexure.)
+        _is_dent_row = fid_enum in (
+            FeatureIdentification.DENT,
+            FeatureIdentification.DENT_WITH_METAL_LOSS,
+        )
+        depth_raw = _get(row, col_map, "depth_pct_wt")
+        depth_pct, _depth_mm = parse_depth(
+            depth_raw, wt, allow_fraction=not _is_dent_row,
+        )
+
+        clock = parse_clock(_get(row, col_map, "clock_position"))
+        surface = parse_surface(_get(row, col_map, "surface"))
 
         # Parse warning: vendor sent a non-empty string that didn't
         # resolve to a known POF code (UNDEFINED). For most metal-loss

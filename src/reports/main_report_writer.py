@@ -1048,9 +1048,170 @@ def _build_placeholders(
     ph["CGR_MODE"] = str(cgr_mode).upper()
     ph["FFP_METHOD"] = (cfg.get("ffp") or {}).get("primary_method", "Original")
     ph["PRIMARY_FFP_METHOD"] = ph["FFP_METHOD"]
-    ph["POD_PCT"] = "10"
+    # POD / unmatched-depth assumption — reflects the actual cgr config.
+    # The synthetic-commissioning case sets unmatched_depth_assumption_
+    # pct_wt to 0.0 (brand-new pipe), so POD_PCT renders "0", not "10".
+    _unmatched_pct = float(
+        (cfg.get("cgr") or {}).get("unmatched_depth_assumption_pct_wt", 10.0)
+    )
+    ph["POD_PCT"] = f"{_unmatched_pct:g}"
     ph["REINSPECTION_INTERVAL_YEARS"] = "5"
     ph["PREPARER"] = ph.get("PREPARED_BY") or "Athena PowerTech LLP"
+
+    # ----- Conditional narrative (v0.3.4) -------------------------------
+    # When Run-1 is a synthetic commissioning baseline (an empty file —
+    # no prior ILI), the standard run-to-run-comparison prose
+    # (Needleman-Wunsch joint alignment, Hungarian defect matching,
+    # "two inspection datasets") is dishonest. Detect that case and
+    # substitute commissioning-baseline narrative. Real two-run
+    # projects (Kandla, HMEL, BPCL, …) take the `else` branch and are
+    # byte-for-byte unaffected.
+    is_synthetic_run1 = run_1 is not None and len(run_1.features) == 0
+    r1_date = ph.get("RUN1_DATE", "the commissioning date")
+    r2_date = ph.get("RUN2_DATE", "the inspection date")
+    r1_year = ph.get("RUN1_YEAR", "commissioning")
+    r2_year = ph.get("RUN2_YEAR", "the latest run")
+    yrs = ph.get("YEARS_BETWEEN", "the elapsed")
+    cgr_mode_label = ph["CGR_MODE"]
+
+    if is_synthetic_run1:
+        ph["INTRO_INSPECTION_NARRATIVE"] = (
+            f"One in-line inspection of the pipeline has been completed, "
+            f"on {r2_date}. No prior ILI baseline exists for this line — "
+            f"it was commissioned in {r1_year} and this survey is its "
+            f"first inspection. For corrosion-growth estimation the "
+            f"metal loss reported by this survey is conservatively "
+            f"assumed to have initiated at commissioning and grown over "
+            f"the intervening {yrs} years."
+        )
+        ph["SCOPE_COMPARISON_BULLETS"] = (
+            f"  * Inventory of every metal-loss anomaly reported by the "
+            f"{r2_year} baseline in-line inspection.\n"
+            f"  * Conservative corrosion-growth estimation referenced "
+            f"to the {r1_year} commissioning date — no earlier ILI "
+            f"exists for run-to-run matching."
+        )
+        ph["CGR_ALIGNMENT_NARRATIVE"] = (
+            f"No prior in-line inspection exists for this pipeline; the "
+            f"{r2_year} survey is the baseline ILI. Conventional "
+            f"run-to-run joint alignment and defect matching therefore "
+            f"do not apply — there is no earlier dataset to align "
+            f"against.\n\n"
+            f"In the absence of a measured earlier state, every "
+            f"metal-loss anomaly is conservatively assumed to have "
+            f"initiated at pipeline commissioning ({r1_date}) and to "
+            f"have grown linearly over the {yrs}-year period to the "
+            f"{r2_date} inspection. This is the most conservative "
+            f"defensible basis: each feature's entire present-day depth "
+            f"is attributed to growth across that interval."
+        )
+        ph["CGR_DETERMINATION_NARRATIVE"] = (
+            f"  * **All defects (baseline ILI)**: with no earlier "
+            f"inspection, each anomaly's depth at the {r1_year} "
+            f"commissioning baseline is taken as 0 % WT — a "
+            f"newly-commissioned pipeline carries no metal loss. Each "
+            f"feature's corrosion growth rate is therefore its full "
+            f"present-day depth divided by the {yrs}-year elapsed "
+            f"period: CGR = depth_run2 / {yrs}. This linear-growth-"
+            f"from-commissioning assumption is conservative and yields "
+            f"a strictly non-negative rate for every feature."
+        )
+        ph["CGR_P95_NARRATIVE"] = (
+            f"To characterise the population, the 95th percentile "
+            f"(P95) of the per-feature CGRs is reported separately for "
+            f"internal and external defects as an upper-bound "
+            f"reference. In {cgr_mode_label} mode each defect is "
+            f"projected forward on its own commissioning-referenced "
+            f"rate; the P95 is reported for context and is not applied "
+            f"as a floor."
+        )
+    else:
+        ph["INTRO_INSPECTION_NARRATIVE"] = (
+            f"Two in-line inspections of the pipeline have been "
+            f"completed: an earlier baseline run on {r1_date} and a "
+            f"follow-up survey on {r2_date}, an interval of {yrs} "
+            f"years."
+        )
+        ph["SCOPE_COMPARISON_BULLETS"] = (
+            "  * Reconciliation and joint-level alignment of the two "
+            "ILI datasets.\n"
+            "  * Defect-level matching of metal-loss anomalies between "
+            "the two runs."
+        )
+        ph["CGR_ALIGNMENT_NARRATIVE"] = (
+            f"The two inspection datasets ({r1_year} and {r2_year}) "
+            f"were aligned at the joint level using Needleman-Wunsch "
+            f"sequence alignment on joint length signatures, anchored "
+            f"by absolute chainage. The alignment produced "
+            f"{ph.get('JOINT_MATCH_COUNT', '—')} matched joint pairs "
+            f"out of a possible {ph.get('TOTAL_JOINTS_RUN2', '—')} "
+            f"joints in the {r2_year} run, a match rate of "
+            f"{ph.get('JOINT_MATCH_RATE_PCT', '—')}% with "
+            f"{ph.get('MONOTONICITY_VIOLATIONS', '—')} chainage "
+            f"reversals (zero violations indicates the alignment "
+            f"preserves run-order consistency).\n\n"
+            f"Within each matched joint pair, individual metal-loss "
+            f"features were matched between runs using Hungarian "
+            f"assignment on a cost matrix combining axial position, "
+            f"clock orientation, surface side, and depth-shrinkage "
+            f"plausibility. The defect-matching pipeline identified "
+            f"{ph.get('DEFECT_MATCH_COUNT', '—')} cross-run pairs out "
+            f"of {ph.get('RUN1_FEATURE_COUNT', '—')} {r1_year} "
+            f"features and {ph.get('RUN2_FEATURE_COUNT', '—')} "
+            f"{r2_year} features."
+        )
+        ph["CGR_DETERMINATION_NARRATIVE"] = (
+            f"  * **Matched defects**: CGR = max(0, (depth_run2 − "
+            f"depth_run1) / years_between). Negative growth is clamped "
+            f"to zero (corrosion does not physically shrink; apparent "
+            f"reduction is attributed to tool measurement "
+            f"variability).\n"
+            f"  * **Unmatched run-2 defects**: features reported only "
+            f"in the later run are assumed to have been below the "
+            f"{ph['POD_PCT']}% WT probability-of-detection threshold "
+            f"at the earlier run. The CGR is then computed assuming "
+            f"depth_old = {ph['POD_PCT']}% × WT, the most conservative "
+            f"non-zero growth rate consistent with the tool's "
+            f"detection limit."
+        )
+        ph["CGR_P95_NARRATIVE"] = (
+            f"To capture the population-level upper bound on growth, "
+            f"the 95th percentile (P95) of the feature-specific CGRs "
+            f"is computed separately for internal and external "
+            f"defects. In {cgr_mode_label} mode, every defect's used "
+            f"growth rate is the greater of its own measured rate and "
+            f"its surface P95 — features that happen to grow slowly "
+            f"are not allowed to escape the population-level "
+            f"expectation."
+        )
+
+    # Dent-scope reconciliation (FIX 3): if this report includes the
+    # dent-strain annexure, say dents are assessed there instead of the
+    # blanket "this report does not assess dents".
+    _annexes = getattr(project, "report_annexures", None) or []
+    _has_dent_annexure = any(
+        tid == "dent_strain_b318" for tid, _letter in _annexes
+    )
+    if _has_dent_annexure:
+        ph["SCOPE_EXCLUSIONS_NARRATIVE"] = (
+            "The metal-loss fitness-for-purpose assessment in this "
+            "report (Sections 2–4) does not cover dents, weld "
+            "anomalies, third-party damage, or stress-corrosion "
+            "cracking — those features fall outside the ASME B31G "
+            "metal-loss scope. Dents are assessed separately for peak "
+            "strain per ASME B31.8 §851.4.1 in the dent-strain "
+            "annexure of this report. Weld anomalies, third-party "
+            "damage, and stress-corrosion cracking remain outside this "
+            "report's scope and are addressed by separate engineering "
+            "assessments."
+        )
+    else:
+        ph["SCOPE_EXCLUSIONS_NARRATIVE"] = (
+            "This report does not assess dents, weld anomalies, "
+            "third-party damage, or stress-corrosion cracking — those "
+            "features fall outside the metal-loss scope and are "
+            "addressed by separate engineering reports."
+        )
 
     # Conclusions narrative — auto-generated from the counts.
     n_repair = ph.get("COUNT_REPAIR_WITHIN_HORIZON", 0)

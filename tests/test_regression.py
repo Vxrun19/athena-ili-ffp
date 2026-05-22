@@ -306,8 +306,9 @@ class TestKandlaRegression:
             f"verdict phrase {expected['verdict_phrase']!r} not in DOCX body"
         )
 
-    # ---- Perf ----
+    # ---- Perf (informational — see the `perf` marker in conftest.py) ----
 
+    @pytest.mark.perf
     def test_runtime_under_budget(self, chain, expected):
         budget = expected["runtime_budget_s"]
         assert chain["elapsed_s"] < budget, (
@@ -435,8 +436,9 @@ class TestHMELRegression:
         assert "Defects flagged for action" in body or \
                "require repair within the" in body
 
-    # ---- Perf ----
+    # ---- Perf (informational — see the `perf` marker in conftest.py) ----
 
+    @pytest.mark.perf
     def test_runtime_under_budget(self, chain, expected):
         budget = expected["runtime_budget_s"]
         assert chain["elapsed_s"] < budget, (

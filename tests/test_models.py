@@ -235,6 +235,36 @@ class TestParseDepth:
         with pytest.raises(ValueError):
             parse_depth("-5", wt_mm=10.0)
 
+    # --- allow_fraction flag (v0.3.4 dent %OD fix) --------------------------
+
+    def test_allow_fraction_false_keeps_sub_one_literal(self):
+        """Dent %OD path: a bare 0.53 must stay 0.53, NOT become 53.
+
+        Regression for the 1YCP dent-depth bug — parse_depth's
+        fraction rule turned a 0.53 %OD dent into 53, which the
+        %OD->mm conversion then inflated to a ~240 mm depth.
+        """
+        pct, _mm = parse_depth(0.53, wt_mm=6.35, allow_fraction=False)
+        assert pct == pytest.approx(0.53)
+
+    def test_allow_fraction_true_is_default_unchanged(self):
+        """Default (metal-loss) behaviour: 0.285 -> 28.5 % still holds."""
+        pct, _mm = parse_depth(0.285, wt_mm=10.0)
+        assert pct == pytest.approx(28.5)
+        pct2, _mm2 = parse_depth(0.285, wt_mm=10.0, allow_fraction=True)
+        assert pct2 == pytest.approx(28.5)
+
+    def test_allow_fraction_false_above_one_unaffected(self):
+        """allow_fraction only governs the (0,1) branch; >=1 is already
+        a literal percent and stays so."""
+        pct, _mm = parse_depth(28.5, wt_mm=10.0, allow_fraction=False)
+        assert pct == pytest.approx(28.5)
+
+    def test_percent_marked_string_ignores_allow_fraction(self):
+        """An explicit '%' is always literal, regardless of the flag."""
+        pct, _mm = parse_depth("0.53%", wt_mm=6.35, allow_fraction=True)
+        assert pct == pytest.approx(0.53)
+
 
 # ---------------------------------------------------------------------------
 # Pressure round-trips
