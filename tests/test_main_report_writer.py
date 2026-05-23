@@ -287,6 +287,63 @@ class TestKandlaContent:
             f"max-ERF line has no numeric joint: {line!r}"
         )
 
+    def test_top20_tables_have_numeric_joint_chainage_surface(self, kandla_report_path):
+        """v0.3.8 FIX: Tables 6a (top-20 by ERF) and 6b (top-20 by depth)
+        must populate Joint, Chainage (m), and Surface for every data row.
+
+        Pre-fix bug: those three columns were hard-coded em-dash strings in
+        ``_top_n_by_erf`` / ``_top_n_by_depth`` (FFPResult lacks those
+        fields). The body therefore rendered '—' for all 20 rows of both
+        tables, even though the v0.3.6 max-ERF SENTENCE for the same
+        feature resolved them correctly. The fix passes a feature lookup
+        built from cgr_results.
+        """
+        doc = Document(str(kandla_report_path))
+        target_headers = [
+            "#", "Feature ID", "Joint", "Chainage (m)",
+            "WT (mm)", "Depth (%WT)", "L (mm)", "Surface",
+            "Psafe (kg/cm²)", "ERF",
+        ]
+        matching_tables = [
+            t for t in doc.tables
+            if [c.text for c in t.rows[0].cells] == target_headers
+        ]
+        # Tables 6a and 6b share the same header layout.
+        assert len(matching_tables) >= 2, (
+            f"expected ≥2 top-20 tables with the canonical header layout, "
+            f"got {len(matching_tables)}"
+        )
+
+        surface_vocab = {"internal", "external", "midwall"}
+        for tbl_idx, tbl in enumerate(matching_tables[:2]):
+            data_rows = list(tbl.rows)[1:]  # skip header
+            assert data_rows, f"table {tbl_idx} has no data rows"
+            for row_idx, row in enumerate(data_rows):
+                joint = row.cells[2].text.strip()
+                chainage = row.cells[3].text.strip()
+                surface = row.cells[7].text.strip()
+                feature_id = row.cells[1].text.strip()
+                # Joint should be an integer string.
+                assert joint and joint != "—" and joint.isdigit(), (
+                    f"table {tbl_idx} row {row_idx} (feature {feature_id!r}) "
+                    f"has non-numeric Joint: {joint!r}"
+                )
+                # Chainage should be a 1-dp float string (e.g. "17246.1").
+                assert chainage and chainage != "—", (
+                    f"table {tbl_idx} row {row_idx} (feature {feature_id!r}) "
+                    f"has em-dash Chainage"
+                )
+                assert re.match(r"^-?\d+(\.\d+)?$", chainage), (
+                    f"table {tbl_idx} row {row_idx} (feature {feature_id!r}) "
+                    f"has non-numeric Chainage: {chainage!r}"
+                )
+                # Surface should be one of internal/external/midwall (Kandla
+                # data won't have UNKNOWN-surface features in the top-20).
+                assert surface in surface_vocab, (
+                    f"table {tbl_idx} row {row_idx} (feature {feature_id!r}) "
+                    f"has non-canonical Surface: {surface!r}"
+                )
+
 
 # ---------------------------------------------------------------------------
 # Performance

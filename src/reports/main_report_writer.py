@@ -473,8 +473,12 @@ class MainReportWriter:
         )
 
         # Top-20 by ERF
+        # v0.3.8 FIX: feed Joint/Chainage/Surface from the Feature records
+        # carried on cgr_list (FFPResult lacks those fields, so the helpers
+        # used to render em-dash for all 20 rows).
+        feat_by_id = _feat_lookup_from_cgrs(cgr_list)
         doc.add_heading("Table 6a — Top 20 features by ERF", level=2)
-        top_erf = _top_n_by_erf(ffp_results, n=20)
+        top_erf = _top_n_by_erf(ffp_results, n=20, feat_by_id=feat_by_id)
         if top_erf:
             _make_table(
                 doc,
@@ -486,7 +490,7 @@ class MainReportWriter:
 
         # Top-20 by depth
         doc.add_heading("Table 6b — Top 20 features by depth", level=2)
-        top_depth = _top_n_by_depth(ffp_results, n=20)
+        top_depth = _top_n_by_depth(ffp_results, n=20, feat_by_id=feat_by_id)
         if top_depth:
             _make_table(
                 doc,
@@ -826,32 +830,80 @@ def _shape_categorization_rows(cgr_list) -> list[list]:
     return rows
 
 
-def _top_n_by_erf(ffp_results, n: int = 20) -> list[list]:
+def _feat_lookup_from_cgrs(cgr_results) -> dict:
+    """Build a {anomaly_id (str) -> Feature} map for table-row enrichment.
+
+    FFPResult carries only wt/depth/length/Psafe/ERF; Joint, Chainage, and
+    Surface live on the Feature record (which CGR carries). v0.3.8 FIX:
+    Tables 6a/6b previously rendered em-dash for those three columns because
+    the helpers only saw `ffp_results`. Mirrors the v0.3.6 FIX B pattern in
+    `_build_placeholders` that populates the max-ERF summary sentence.
+    """
+    if not cgr_results:
+        return {}
+    return {str(c.feature.anomaly_id): c.feature for c in cgr_results}
+
+
+def _surface_label(feat) -> str:
+    """Render Feature.surface as 'internal' / 'external' / '—'."""
+    if feat is None:
+        return "—"
+    s = getattr(feat, "surface", None)
+    if s is Surface.INTERNAL:
+        return "internal"
+    if s is Surface.EXTERNAL:
+        return "external"
+    if s is Surface.MIDWALL:
+        return "midwall"
+    return "—"
+
+
+def _chainage_label(feat) -> str:
+    if feat is None or feat.abs_distance_m is None:
+        return "—"
+    return f"{feat.abs_distance_m:.1f}"
+
+
+def _joint_label(feat) -> str:
+    if feat is None or feat.joint_number is None:
+        return "—"
+    return str(feat.joint_number)
+
+
+def _top_n_by_erf(ffp_results, n: int = 20, feat_by_id: dict | None = None) -> list[list]:
     sorted_results = sorted(ffp_results, key=lambda r: -(r.erf or 0))
+    feat_by_id = feat_by_id or {}
     out = []
     for i, r in enumerate(sorted_results[:n], start=1):
+        feat = feat_by_id.get(str(r.feature_id))
         out.append([
-            i, r.feature_id, "—", "—",
+            i, r.feature_id,
+            _joint_label(feat),
+            _chainage_label(feat),
             f"{r.wt_mm:.1f}" if r.wt_mm is not None else "",
             f"{r.depth_pct_wt:.2f}" if r.depth_pct_wt is not None else "",
             f"{r.length_mm:.0f}" if r.length_mm is not None else "",
-            "—",
+            _surface_label(feat),
             f"{r.sop_kgcm2:.2f}",
             f"{r.erf:.4f}",
         ])
     return out
 
 
-def _top_n_by_depth(ffp_results, n: int = 20) -> list[list]:
+def _top_n_by_depth(ffp_results, n: int = 20, feat_by_id: dict | None = None) -> list[list]:
     sorted_results = sorted(ffp_results, key=lambda r: -(r.depth_pct_wt or 0))
+    feat_by_id = feat_by_id or {}
     out = []
     for i, r in enumerate(sorted_results[:n], start=1):
+        feat = feat_by_id.get(str(r.feature_id))
         out.append([
-            i, r.feature_id, "—", "—",
+            i, r.feature_id,
+            _joint_label(feat),
+            _chainage_label(feat),
             f"{r.wt_mm:.1f}" if r.wt_mm is not None else "",
             f"{r.depth_pct_wt:.2f}" if r.depth_pct_wt is not None else "",
             f"{r.length_mm:.0f}" if r.length_mm is not None else "",
-            "—",
+            _surface_label(feat),
             f"{r.sop_kgcm2:.2f}",
             f"{r.erf:.4f}",
         ])

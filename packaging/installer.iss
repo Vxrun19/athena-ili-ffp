@@ -6,10 +6,10 @@
 ; This script expects PyInstaller to have already produced
 ;     dist\athena_ili_ffp\           (the one-folder distribution; CLI + GUI)
 ; The compiled installer lands at
-;     dist\Setup_AthenaIliFfp_v0.3.7.exe
+;     dist\Setup_AthenaIliFfp_v0.3.8.exe
 
 #define MyAppName        "Athena ILI FFP Tool"
-#define MyAppVersion     "0.3.7"
+#define MyAppVersion     "0.3.8"
 #define MyAppPublisher   "Athena PowerTech LLP"
 #define MyAppGuiExeName  "AthenaIliFfp.exe"
 #define MyAppCliExeName  "athena_ili_ffp.exe"

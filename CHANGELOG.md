@@ -7,6 +7,28 @@ and the project loosely follows semantic versioning. Until v1.0 the
 project is treated as MINOR-versioned (0.2 → 0.3 is allowed to break
 on-disk YAML / annexure schemas; a PATCH bump like 0.2.0 → 0.2.1 will not).
 
+## [0.3.8] - 2026-05-23
+
+### Fixed
+- ERF/depth ranked tables (6a/6b) populate Joint, Chainage, Surface from
+  the feature record; report-layer only, no engine-math change. Pre-fix
+  bug: those three columns rendered em-dash for all 20 rows of both
+  tables (Table 6a — Top 20 by ERF, Table 6b — Top 20 by depth). The
+  helpers `_top_n_by_erf` / `_top_n_by_depth` accepted only `ffp_results`,
+  but `FFPResult` doesn't carry chainage / joint / surface (those live on
+  the `Feature` record). The same data was already resolved correctly
+  for the max-ERF SENTENCE via the v0.3.6 FIX B pattern (`_feat_by_id`
+  lookup built from `cgr_results`); applied the same pattern to the
+  ranked-table helpers. Surface renders as "internal" / "external" /
+  "midwall" (no abbreviation, no em-dash). The four sacred-pin
+  invariants (Kandla #125 CGR bit-exact, Mathura-Piyala 29,844 FFP /
+  323 Kastner, Malarna ERF bucket counts raw + 3dp, BPCL row-4
+  dent-strain calibration) remain untouched, as expected from a
+  report-layer change. New regression test
+  `test_top20_tables_have_numeric_joint_chainage_surface` walks both
+  Top-20 tables in the rendered DOCX and asserts every data row has
+  numeric Joint, numeric Chainage, and a canonical Surface label.
+
 ## [0.3.7] - 2026-05-22
 
 ### Fixed
